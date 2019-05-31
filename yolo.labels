@@ -1,0 +1,8 @@
+0 Car (255,50,0)
+1 Van (255,0,130)
+2 Truck (0,0,255)
+3 Pedestrain (0,100,255)
+4 person_sitting (255,255,0)
+5 Cyclist (0,255,0)
+6 Tram (0,255,255)
+7 Misc (255,0,255)
