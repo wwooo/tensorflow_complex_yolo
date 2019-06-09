@@ -5,7 +5,9 @@ GRID_W, GRID_H = 32, 24
 N_CLASSES = 8
 N_ANCHORS = 5
 IMAGE_HEIGHT, IMAGE_WIDTH, IMAGE_DEPTH = GRID_H * SCALE, GRID_W * SCALE, 3
-class_dict = {'Car':0,'Van':1,'Truck':2,'Pedestrian':3,'Person_sitting':4,'Cyclist':5,'Tram':6,'Misc':7}
+class_dict = {'Car': 0, 'Van': 1, 'Truck': 2, 'Pedestrian': 3, 'Person_sitting': 4, 'Cyclist': 5, 'Tram': 6, 'Misc': 7}
+
+
 def lrelu(x, leak):
     return tf.maximum(x, leak * x, name='relu')
 
@@ -34,6 +36,7 @@ def passthrough_layer(a, b, kernel, depth, size, train_logical, name):
     y = tf.concat([a, b], axis=3)
     return y
 
+
 def slice_tensor(x, start, end=None):
     if end < 0:
         y = x[..., start:]
@@ -49,30 +52,31 @@ def iou_wh(r1, r2):
     min_h = min(r1[1], r2[1])
     area_r1 = r1[0] * r1[1]
     area_r2 = r2[0] * r2[1]
-
     intersect = min_w * min_h
     union = area_r1 + area_r2 - intersect
-
     return intersect / union
-def get_grid_cell(roi, img_w, img_h, grid_w, grid_h):#roi[x, y, w, h, rz]
-	x_center = roi[0]
-	y_center = roi[1]
-	grid_x = int(grid_w * x_center / img_w)
-	grid_y = int(grid_h * y_center / img_h)
-	return grid_x, grid_y
+
+
+def get_grid_cell(roi, img_w, img_h, grid_w, grid_h):  # roi[x, y, w, h, rz]
+    x_center = roi[0]
+    y_center = roi[1]
+    grid_x = np.minimum(int(grid_w * x_center / img_w), 31)
+    grid_y = np.minimum(int(grid_h * y_center / img_h), 23)
+    return grid_x, grid_y
+
 
 def get_active_anchors(roi, anchors, iou_th):
-	indxs = []
-	iou_max, index_max = 0, 0
-	for i, a in enumerate(anchors):
-		iou = iou_wh(roi[2:4], a)
-		if iou>iou_th:
-			indxs.append(i)
-		if iou > iou_max:
-			iou_max, index_max = iou, i
-	if len(indxs) == 0:
-		indxs.append(index_max)
-	return indxs
+    indxs = []
+    iou_max, index_max = 0, 0
+    for i, a in enumerate(anchors):
+        iou = iou_wh(roi[2:4], a)
+        if iou>iou_th:
+            indxs.append(i)
+        if iou > iou_max:
+            iou_max, index_max = iou, i
+    if len(indxs) == 0:
+        indxs.append(index_max)
+    return indxs
 
 
 def roi2label(roi, anchor, img_w, img_h, grid_w, grid_h):
@@ -82,43 +86,31 @@ def roi2label(roi, anchor, img_w, img_h, grid_w, grid_h):
     h = grid_h * roi[3] / img_h
     anchor_w = grid_w * anchor[0] / img_w
     anchor_h = grid_h * anchor[1] / img_h
-
     grid_x = grid_w * x_center / img_w
     grid_y = grid_h * y_center / img_h
-
     grid_x_offset = grid_x - int(grid_x)
     grid_y_offset = grid_y - int(grid_y)
-
     roi_w_scale = np.log(w / anchor_w + 1e-16)
     roi_h_scale = np.log(h / anchor_h + 1e-16)
-
     re = np.cos(roi[4])
     im = np.sin(roi[4])
-
     label = [grid_x_offset, grid_y_offset, roi_w_scale, roi_h_scale, re, im]
-
     return label
-def encode_label(label_txt, anchors, img_w, img_h, grid_w, grid_h, iou_th):
-    #anchors = read_anchors_file(anchors_path)
+
+
+def encode_label(labels, anchors, img_w, img_h, grid_w, grid_h, iou_th):
     anchors_on_image = np.array([img_w, img_h]) * anchors / np.array([80, 60])
     n_anchors = np.shape(anchors_on_image)[0]
-
-    label = np.zeros([grid_h, grid_w, n_anchors, (6 + 1 + 1)], dtype=np.float32)
-    for label_list in label_txt:
-        rois = label_list[1:]
-        classes = class_dict[label_list[0]]
-        rois = np.array(rois, dtype=np.float32)
-        classes = np.array(classes, dtype=np.int32)
+    label_encoded = np.zeros([grid_h, grid_w, n_anchors, (6 + 1 + 1)], dtype=np.float32)
+    for i in range(labels.shape[0]):
+        rois = labels[i][1:]
+        classes = np.array(labels[i][0], dtype=np.int32)
         active_indxs = get_active_anchors(rois, anchors_on_image, iou_th)
         grid_x, grid_y = get_grid_cell(rois, img_w, img_h, grid_w, grid_h)
-
         for active_indx in active_indxs:
             anchor_label = roi2label(rois, anchors_on_image[active_indx], img_w, img_h, grid_w, grid_h)
-
-            label[grid_y, grid_x, active_indx] = np.concatenate((anchor_label, [classes], [1.0]))
-
-    return label
-
+            label_encoded[grid_y, grid_x, active_indx] = np.concatenate((anchor_label, [classes], [1.0]))
+    return label_encoded
 
 
 def yolo_net(x, train_logical):
@@ -154,15 +146,11 @@ def yolo_net(x, train_logical):
     x = passthrough_layer(x, passthrough, (3, 3), 64, 2, train_logical, 'conv21')
     x = conv_layer(x, (3, 3), 1024, train_logical, 'conv19')
     x = conv_layer(x, (1, 1), N_ANCHORS * (7 + N_CLASSES), train_logical, 'conv20')  # x,y,w,l,re,im,conf + 8 class
-
     y = tf.reshape(x, shape=(-1, GRID_H, GRID_W, N_ANCHORS, 7 + N_CLASSES), name='y')
-    # print y
     return y
 
 def yolo_loss(pred, label, batch_size):
-
     mask = slice_tensor(label, 7, 7)
-    # print (mask.shape)
     label = slice_tensor(label, 0, 6)
     mask = tf.cast(tf.reshape(mask, shape=(-1, GRID_H, GRID_W, N_ANCHORS)), tf.bool)
     with tf.name_scope('mask'):
