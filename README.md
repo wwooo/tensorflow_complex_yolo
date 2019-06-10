@@ -71,13 +71,17 @@ Then create  RGB-image data set：
  
 4 . Create the following folder structure in the current working directory
 ./test/
+
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-images/
+
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-labels/
            
  ./train/
+
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-images/
+
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-labels/
-           
+
 5 . run python make_image_dataset.py
 
  Note：This model only predicts the area of 60*80 in front of the car, and encodes the point cloud in this area into a 768 *1024 RGB-map. In the kitti data set, not all samples have objects in this area. Therefore, in the process of making an image dataset, the script will automatically filter out  samples of that doesn't  have objects  in the aera.
@@ -87,7 +91,7 @@ Then create  RGB-image data set：
 How to train a model:
 1 .  Adjust the training parameters in train.py according to the actual  situation.
 
- 2 .   run python train.py
+2 .   run python train.py
 
 How to predict:
 
