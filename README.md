@@ -6,9 +6,9 @@
 
 ### Overview
 
-The warehouse is an unofficial implementation of complex-yolo, and the model structure is slightly inconsistent with what the paper describes. [Complex-YOLO: Real-time 3D Object Detection on Point Clouds](https://arxiv.org/abs/1803.06199).Point cloud data preprocessing reference[AI-liu/Complex-YOLO](https://github.com/AI-liu/Complex-YOLO), Model structure reference[WojciechMormul/yolo2](https://github.com/WojciechMormul/yolo2).On this basis, a complete complex-yolo algorithm is implemented.
+The project is an unofficial implementation of complex-yolo, and the model structure is slightly inconsistent with what the paper describes. [Complex-YOLO: Real-time 3D Object Detection on Point Clouds](https://arxiv.org/abs/1803.06199).Point cloud data preprocessing reference[AI-liu/Complex-YOLO](https://github.com/AI-liu/Complex-YOLO), Model structure reference[WojciechMormul/yolo2](https://github.com/WojciechMormul/yolo2).On this basis, a complete complex-yolo algorithm is implemented.
 
-Complex-yolo takes point cloud data as input and encodes point cloud into RGB-map of bird 's-eye view to predict the position and yaw angle of objiects in 3d space.  In order to improve the efficiency of the training model, the point cloud data set is firstly made into RGB dataset.  The experiment is based on the kitti dataset. The kitti dataset has a total of 7481 tagged data. The dataset is divided into two parts, the first 1000 samples are used as test sets,  and the remaining samples are used as training sets.
+Complex-yolo takes point cloud data as input and encodes point cloud into RGB-map of bird 's-eye view to predict the position and yaw angle of objiects in 3d space.  In order to improve the efficiency of  training model, the point cloud data set is firstly made into RGB dataset.  The experiment is based on the kitti dataset. The kitti dataset has a total of 7481 labeled data. The dataset is divided into two parts, the first 1000 samples are used as test sets,  and the remaining samples are used as training sets.
 
 ### Examples
 
@@ -16,8 +16,8 @@ Below are some prediction examples of the Complex-Yolo， the predictions were m
 
 | |  |
 |---|---|
-|<div align="center"><img src="https://github.com/wwooo/tensorflow\_complex\_yolo/blob/master/examples/1.png" width="500" height="350" /></div>|<div align="center"><img src="https://github.com/wwooo/tensorflow\_complex_yolo/blob/master/examples/2.png" width="500" height="350" /></div> |
-| <div align="center"><img src="https://github.com/wwooo/tensorflow\_complex\_yolo/blob/master/examples/3.png" width="500" height="350" /></div> |  <div align="center"><img src="https://github.com/wwooo/tensorflow\_complex_yolo/blob/master/examples/4.png" width="500" height="350" /></div>  |
+|<div align="center"><img src="https://github.com/wwooo/tensorflow_complex_yolo/blob/master/examples/1.png" width="500" height="350" /></div>|<div align="center"><img src="https://github.com/wwooo/tensorflow_complex_yolo/blob/master/examples/2.png" width="500" height="350" /></div> |
+| <div align="center"><img src="https://github.com/wwooo/tensorflow_complex_yolo/blob/master/examples/3.png" width="500" height="350" /></div> |  <div align="center"><img src="https://github.com/wwooo/tensorflow_complex_yolo/blob/master/examples/4.png" width="500" height="350" /></div>  |
 
 ### Dependencies
 
@@ -58,9 +58,9 @@ data_object_label_2/training/label_2/\*.txt &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\*.txt
 
 data_object_calib/training/calib/\*.txt&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\*.txt -> calib
 
-The test.txt and train.txt store the test and train sample index
-test 	000000-000999
-train 	001000-007480
+The test.txt and train.txt store the test and train sample index<br>
+test :	000000-000999<br>
+train: 	001000-007480<br>
  
 Then create  RGB-image data set：
  
