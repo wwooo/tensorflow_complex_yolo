@@ -1,12 +1,13 @@
-## SSD: Single-Shot MultiBox Detector implementation in Keras
+## Complex-YOLO  implementation in tensorflow
 ---
 ### Contents
 
-1. [Overview](#overview)
-3. [Examples](#examples)
-4. [Dependencies](#dependencies)
-5. [How to use it](#how-to-use-it)
-9. [ToDo](#todo)
+[Overview](#overview)
+[Examples](#examples)
+[Dependencies](#dependencies)
+[How to use it](#how-to-use-it)
+[Others](#others)
+[ToDo](#todo)
 
 ### Overview
 
@@ -20,8 +21,8 @@ Below are some prediction examples of the Complex-Yolo， the predictions were m
 
 | | |
 |---|---|
-| ![img01](./examples/1.png) | ![img01](./examples/2.png) |
-| ![img01](./examples/3.png) | ![img01](./examples/4.png) |
+|<div align="center"><img src="./examples/1.png" width="700" height="450" /></div>|<div align="center"><img src="./examples/2.png" width="700" height="450" /></div> |
+| <div align="center"><img src="./examples/3.png" width="700" height="450" /></div> |  <div align="center"><img src="./examples/4.png" width="700" height="450" /></div>  |
 
 ### Dependencies
 
@@ -34,54 +35,66 @@ Below are some prediction examples of the Complex-Yolo， the predictions were m
 
 How to prepare data:
 
-First, download the data from the official website of kitti.
+1 . Download the data from the official website of kitti.
+
 * [data_object_velodyne.zip](http://www.cvlibs.net/download.php?file=data_object_velodyne.zip)
 * [data_object_label_2.zip](http://www.cvlibs.net/download.php?file=data_object_label_2.zip)
- [data_object_calib.zip](http://www.cvlibs.net/download.php?file=data_object_calib.zip)
+* [data_object_calib.zip](http://www.cvlibs.net/download.php?file=data_object_calib.zip)
 
-Create the following folder structure in the current working directory
+2 . Create the following folder structure in the current working directory
+
 ./kitti/training/
-                          -velodyne/
-                          -label_２/
-                          -calib/
-                          -test.txt
-                         - train.txt
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -velodyne/
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -label_２/
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; -calib/
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-test.txt
+ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- train.txt
                          
- Unzip the downloaded kitti dataset and get the following data. Place the data in the corresponding folder created above.
+ 3 . Unzip the downloaded kitti dataset and get the following data. Place the data in the corresponding folder created above.
          
-data_object_velodyne/training/*.bin　　　　　       *.bin ->  velodyne
-data_object_label_2/training/label_2/*.txt 　　　   *.txt -> label_２
-data_object_calib/training/clib/*.txt　　　　　　  *.txt -> calib
-The test.txt and train.txt store the test and train sample index,
-test [000000-000999],  train [001000-007480]
- 
- Then create an RGB- image data set：
-1.  Create the following folder structure in the current working directory
-./test/
-           -images/
-           -labels/
-./train/
-           -images/
-           -labels/
-2.  run make_image_dataset.py
+data_object_velodyne/trainin/\*.bin&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\*.bin ->  velodyne
+data_object_label_2/training/label_2/\*.txt &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\*.txt -> label_２
+data_object_calib/training/calib/\*.txt&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\*.txt -> calib
 
-      Note：This model only predicts the area of 60*80 in front of the car, and encodes the point cloud in this area into a 768 *1024 RGB-map. In the kitti data set, not all samples have objects in this area. Therefore, in the process of making an image dataset, the script will automatically filter out  samples of that doesn't  have objects  in the aera.
+The test.txt and train.txt store the test and train sample index
+test 	000000-000999
+train 	001000-007480
+ 
+Then create  RGB-image data set：
+ 
+4 . Create the following folder structure in the current working directory
+./test/
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-images/
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-labels/
+           
+ ./train/
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-images/
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-labels/
+           
+5 . run python make_image_dataset.py
+
+ Note：This model only predicts the area of 60*80 in front of the car, and encodes the point cloud in this area into a 768 *1024 RGB-map. In the kitti data set, not all samples have objects in this area. Therefore, in the process of making an image dataset, the script will automatically filter out  samples of that doesn't  have objects  in the aera.
       
-3 . run make_train_test.py  will generate test_image_list.txt  and train_image_list.txt in the config folder.  This step is optional, the two  files already exist in config folder.
+6 . run python make_train_test.py  will generate test_image_list.txt  and train_image_list.txt in the config folder.  This step is optional, the two  files already exist in config folder.
                         
 How to train a model:
-1.  Adjust the training parameters in train.py according to the actual    situation, such as batchsize, iteration steps.
+1 .  Adjust the training parameters in train.py according to the actual  situation.
 
-  2 .   run train.py
-
+ 2 .   run python train.py
 
 How to predict:
 
-1 . run predict.py
+1 . run python predict.py
 
-Others
+When running predict.py , directly use point cloud data as input to the model, and the script saves the predicted result in the predict_result folder.
+
+How to eval:
+
+run python kitti_eval.py
+
+This script will save the prediction results consistent with the kitti label format. Then use kitti's official evaluation script to evaluate.
+
+###Others
 You can run  visualize_augumented_data.py to visualize the transformed  data and labels.
 ### ToDo
 
-
-*
