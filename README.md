@@ -21,8 +21,8 @@ Below are some prediction examples of the Complex-Yolo， the predictions were m
 
 | | |
 |---|---|
-|<div align="center"><img src="./examples/1.png" width="700" height="450" /></div>|<div align="center"><img src="./examples/2.png" width="700" height="450" /></div> |
-| <div align="center"><img src="./examples/3.png" width="700" height="450" /></div> |  <div align="center"><img src="./examples/4.png" width="700" height="450" /></div>  |
+|<div align="center"><img src="./examples/1.png" width="500" height="350" /></div>|<div align="center"><img src="./examples/2.png" width="500" height="350" /></div> |
+| <div align="center"><img src="./examples/3.png" width="500" height="350" /></div> |  <div align="center"><img src="./examples/4.png" width="500" height="350" /></div>  |
 
 ### Dependencies
 
@@ -70,6 +70,7 @@ train 	001000-007480
 Then create  RGB-image data set：
  
 4 . Create the following folder structure in the current working directory
+
 ./test/
 
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-images/
@@ -89,6 +90,7 @@ Then create  RGB-image data set：
 6 . run python make_train_test.py  will generate test_image_list.txt  and train_image_list.txt in the config folder.  This step is optional, the two  files already exist in config folder.
                         
 How to train a model:
+
 1 .  Adjust the training parameters in train.py according to the actual  situation.
 
 2 .   run python train.py
