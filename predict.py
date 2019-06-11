@@ -71,7 +71,7 @@ def predict(draw_gt_box=False):
         # draw gt bbox
         if draw_gt_box:
             for i in range(target.shape[0]):
-                if target[i][1] == 0 and target[i][2] == 0:
+                if target[i].sum() == 0:
                     break
                 cx = int(target[i][1] * img_w)
                 cy = int(target[i][2] * img_h)
