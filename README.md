@@ -52,7 +52,7 @@ How to prepare data:
                          
  3 . Unzip the downloaded kitti dataset and get the following data. Place the data in the corresponding folder created above.
          
-data_object_velodyne/trainin/\*.bin&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\*.bin ->  velodyne
+data_object_velodyne/training/\*.bin&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\*.bin ->  velodyne
 
 data_object_label_2/training/label_2/\*.txt &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\*.txt -> label_２
 

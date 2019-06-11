@@ -89,7 +89,7 @@ def draw_rotated_box(img, cy, cx, w, h, angle, color):
     :param w:   box's width
     :param h:   box's height
     :param angle: rz
-    :param color: the color of box
+    :param color: the color of box, (R, G, B)
     """
     left = int(cy - w / 2)
     top = int(cx - h / 2)
@@ -214,7 +214,6 @@ def get_target(label_file, transform):
             location_y = t_lidar[0][1]
             if (location_x > 0) & (location_x < 60) & (location_y > -40) & (
                     location_y < 40):
-                # print(obj_class)
                 target[index][2] = t_lidar[0][0] / 60.0  # make sure target inside the covering area (0,1)
                 target[index][1] = (t_lidar[0][1] + 40) / 80.0  # we should put this in [0,1], so divide max_size  80 m
                 obj_width = obj[9].strip()
