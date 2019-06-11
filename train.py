@@ -99,7 +99,7 @@ def train(load_weights=False):
         writer.add_summary(summary_str, step)
 
         if step % 10 == 0:
-            print('iter: %i, loss: %f, lr: %f' % (step, loss_data, lr))
+            print('iter: %i, loss: %f, lr: %f' % (step, train_loss, lr))
         if (step + 1) % SAVE_INTERVAL == 0:
             val_loss = 0.0
             for val_step, (val_image_data, val_label_data) in enumerate(
