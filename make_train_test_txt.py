@@ -1,7 +1,7 @@
+# -*- coding: utf-8 -*-
 import os
 train_label_dir = './train/labels'
 test_label_dir = './test/labels'
-
 train_list = sorted(os.listdir(train_label_dir))
 test_list = sorted(os.listdir(test_label_dir))
 print("the num of train: {}".format(len(train_list)))

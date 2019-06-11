@@ -1,20 +1,29 @@
+# -*- coding: utf-8 -*-
+from __future__ import division
 import numpy as np
 import cv2
 import os
-from utils.kitti_utils import read_anchors_file, read_label_from_txt, \
+from utils.kitti_utils import read_anchors_from_file, read_label_from_txt, \
     load_kitti_calib, get_target, removePoints, makeBVFeature
 from dataset.augument import RandomScaleAugmentation
 from model.model import encode_label
 img_h, img_w = 768, 1024
 grid_h, grid_w = 24, 32
 iou_th = 0.5
-boundary = {'minX': 0, 'maxX': 80, 'minY': -40, 'maxY': 40, 'minZ': -2, 'maxZ': 1.25}
+boundary = {
+    'minX': 0,
+    'maxX': 80,
+    'minY': -40,
+    'maxY': 40,
+    'minZ': -2,
+    'maxZ': 1.25
+}
 
 
 class PointCloudDataset(object):
-
-    def __init__(self, root='./kitti/', data_set='train'):
-
+    def __init__(self,
+                 root='./kitti/',
+                 data_set='train'):
         self.root = root
         self.data_path = os.path.join(root, 'training')
         self.lidar_path = os.path.join(self.data_path, "velodyne/")
@@ -26,6 +35,9 @@ class PointCloudDataset(object):
             self.index_list = f.read().splitlines()
 
     def getitem(self):
+        """
+        Encode single-frame point cloud data into RGB-map and get the label
+        """
         for index in self.index_list:
             lidar_file = self.lidar_path + '/' + index + '.bin'
             calib_file = self.calib_path + '/' + index + '.txt'
@@ -33,16 +45,26 @@ class PointCloudDataset(object):
             calib = load_kitti_calib(calib_file)
             target = get_target(label_file, calib['Tr_velo2cam'])
             # load point cloud data
-            point_cloud = np.fromfile(lidar_file, dtype=np.float32).reshape(-1, 4)
+            point_cloud = np.fromfile(lidar_file,
+                                      dtype=np.float32).reshape(-1, 4)
             b = removePoints(point_cloud, boundary)
-            rgb_map = makeBVFeature(b)   # (768, 1024, 3)
+            rgb_map = makeBVFeature(b)  # (768, 1024, 3)
 
             yield index, rgb_map, target
 
 
 class ImageDataSet(object):
-
-    def __init__(self, data_set='train', mode='train', flip=True, random_scale=True, aug_hsv=False, load_to_memory=False):
+    """
+    If there is enough memory, set load_to_memory=True,
+    load the data into memory to improve training efficiency.
+    """
+    def __init__(self,
+                 data_set='train',
+                 mode='train',
+                 flip=True,
+                 random_scale=True,
+                 aug_hsv=False,
+                 load_to_memory=False):
         self.mode = mode
         self.flip = flip
         self.aug_hsv = aug_hsv
@@ -52,14 +74,14 @@ class ImageDataSet(object):
         self.images_dir = data_set + '/' + 'images/'
         self.all_image_index = 'config/' + data_set + '_image_list.txt'
         self.load_to_memory = load_to_memory
-        self.anchors = read_anchors_file(self.anchors_path)
+        self.anchors = read_anchors_from_file(self.anchors_path)
         self.rand_scale_transform = RandomScaleAugmentation(img_h, img_w)
         self.label = None
         self.img = None
         self.img_index = None
         self.label_encoded = None
 
-    def horizontal_flip(self, image, target):  # target:class, x,y,w,l,angle
+    def horizontal_flip(self, image, target):  # target: class,x,y,w,l,angle
         image = np.flip(image, 1)  # image = image[:, ::-1, :]
         image_w = image.shape[1]
         target[:, 1] = image_w - target[:, 1]
@@ -81,6 +103,10 @@ class ImageDataSet(object):
         return img
 
     def label_box_center_to_corner(self, label):
+        """
+        :param label: class, cx, cy, w, l, angle
+        :return: class, x_min, y_min, x_max, y_max, angle
+        """
         label_ = np.copy(label)
         cx = label_[:, 1]
         cy = label_[:, 2]
@@ -93,6 +119,10 @@ class ImageDataSet(object):
         return label
 
     def label_box_corner_to_center(self, label):
+        """
+        :param label: class, x_min, y_min, x_max, y_max, angle
+        :return:  class, cx, cy, w, l, angle
+        """
         cx = (label[:, 1] + label[:, 3]) / 2.0
         cy = (label[:, 2] + label[:, 4]) / 2.0
         w = label[:, 3] - label[:, 1]
@@ -135,19 +165,22 @@ class ImageDataSet(object):
                                 self.img = self.augment_hsv(self.img)
                         if self.flip:
                             if np.random.random() > 0.5:
-                                self.img, self.label = self.horizontal_flip(self.img, self.label)
+                                self.img, self.label = self.horizontal_flip(
+                                    self.img, self.label)
                         if self.random_scale:
-                            self.label = self.label_box_center_to_corner(self.label)
-                            self.img, self.label = self.rand_scale_transform(self.img, self.label)
-                            self.label = self.label_box_corner_to_center(self.label)
-                        self.label_encoded = encode_label(self.label, self.anchors, img_w, img_h, grid_w, grid_h,
-                                                          iou_th)
-                        if self.mode == 'train':
+                            self.label = self.label_box_center_to_corner(
+                                self.label)
+                            self.img, self.label = self.rand_scale_transform(
+                                self.img, self.label)
+                            self.label = self.label_box_corner_to_center(
+                                self.label)
+                        self.label_encoded = encode_label(
+                            self.label, self.anchors, img_w, img_h, grid_w,
+                            grid_h, iou_th)
+                        if self.mode == 'train':  # Generate data for training
                             yield self.img_index, self.img / 255.0, self.label_encoded
-                        if self.mode == 'infer':
+                        if self.mode == 'infer':  # Generate data for visualization
                             yield self.img_index, self.img, self.label
-
-
 
             else:
                 while True:
@@ -168,12 +201,18 @@ class ImageDataSet(object):
                                 self.img = self.augment_hsv(self.img)
                         if self.flip:
                             if np.random.random() > 0.5:
-                                self.img, self.label = self.horizontal_flip(self.img, self.label)
+                                self.img, self.label = self.horizontal_flip(
+                                    self.img, self.label)
                         if self.random_scale:
-                            self.label = self.label_box_center_to_corner(self.label)
-                            self.img, self.label = self.rand_scale_transform(self.img, self.label)
-                            self.label = self.label_box_corner_to_center(self.label)
-                        self.label_encoded = encode_label(self.label, self.anchors, img_w, img_h, grid_w, grid_h, iou_th)
+                            self.label = self.label_box_center_to_corner(
+                                self.label)
+                            self.img, self.label = self.rand_scale_transform(
+                                self.img, self.label)
+                            self.label = self.label_box_corner_to_center(
+                                self.label)
+                        self.label_encoded = encode_label(
+                            self.label, self.anchors, img_w, img_h, grid_w,
+                            grid_h, iou_th)
                         if self.mode == 'train':
                             yield self.img_index, self.img / 255.0, self.label_encoded
                         if self.mode == 'infer':
@@ -196,4 +235,3 @@ class ImageDataSet(object):
     # def pre_get_batch(self, batch_size):
     #     data_batch = BackgroundGenerator(self.get_batch(batch_size), 10)
     #     yield data_batch
-

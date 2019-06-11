@@ -1,4 +1,6 @@
 import numpy as np
+
+
 def bbox_iou(box1, box2, x1y1x2y2=True):
     if x1y1x2y2:
         mx = min(box1[0], box2[0])
@@ -10,10 +12,10 @@ def bbox_iou(box1, box2, x1y1x2y2=True):
         w2 = box2[2] - box2[0]
         h2 = box2[3] - box2[1]
     else:
-        mx = min(box1[0]-box1[2]/2.0, box2[0]-box2[2]/2.0)
-        Mx = max(box1[0]+box1[2]/2.0, box2[0]+box2[2]/2.0)
-        my = min(box1[1]-box1[3]/2.0, box2[1]-box2[3]/2.0)
-        My = max(box1[1]+box1[3]/2.0, box2[1]+box2[3]/2.0)
+        mx = min(box1[0] - box1[2] / 2.0, box2[0] - box2[2] / 2.0)
+        Mx = max(box1[0] + box1[2] / 2.0, box2[0] + box2[2] / 2.0)
+        my = min(box1[1] - box1[3] / 2.0, box2[1] - box2[3] / 2.0)
+        My = max(box1[1] + box1[3] / 2.0, box2[1] + box2[3] / 2.0)
         w1 = box1[2]
         h1 = box1[3]
         w2 = box2[2]
@@ -30,12 +32,14 @@ def bbox_iou(box1, box2, x1y1x2y2=True):
     area2 = w2 * h2
     carea = cw * ch
     uarea = area1 + area2 - carea
-    return carea/uarea
+    return carea / uarea
 
 
 def iou(r1, r2):
-    intersect_w = np.maximum(np.minimum(r1[0] + r1[2], r2[0] + r2[2]) - np.maximum(r1[0], r2[0]), 0)
-    intersect_h = np.maximum(np.minimum(r1[1] + r1[3], r2[1] + r2[3]) - np.maximum(r1[1], r2[1]), 0)
+    intersect_w = np.maximum(
+        np.minimum(r1[0] + r1[2], r2[0] + r2[2]) - np.maximum(r1[0], r2[0]), 0)
+    intersect_h = np.maximum(
+        np.minimum(r1[1] + r1[3], r2[1] + r2[3]) - np.maximum(r1[1], r2[1]), 0)
     area_r1 = r1[2] * r1[3]
     area_r2 = r2[2] * r2[3]
     intersect = intersect_w * intersect_h
@@ -45,11 +49,11 @@ def iou(r1, r2):
 
 def softmax(x):
     e_x = np.exp(x)
-    return e_x/np.sum(e_x)
+    return e_x / np.sum(e_x)
 
 
 def sigmoid(x):
-    return 1.0/(1.0 + np.exp(-x))
+    return 1.0 / (1.0 + np.exp(-x))
 
 
 def non_max_supression(classes, locations, prob_th, iou_th):

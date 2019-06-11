@@ -12,7 +12,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-
 import cv2
 import inspect
 import numpy as np
@@ -27,7 +26,13 @@ class RandomScaleAugmentation:
     def __init__(self,
                  img_height=768,
                  img_width=1024,
-                 labels_format={'class_id': 0, 'xmin': 1, 'ymin': 2, 'xmax': 3, 'ymax': 4}):
+                 labels_format={
+                     'class_id': 0,
+                     'xmin': 1,
+                     'ymin': 2,
+                     'xmax': 3,
+                     'ymax': 4
+                 }):
         """
         Arguments:
             height (int): The desired height of the output images in pixels.
@@ -52,11 +57,11 @@ class RandomScaleAugmentation:
 
         self.resize = ResizeRandomInterp(height=img_height,
                                          width=img_width,
-                                         interpolation_modes=[cv2.INTER_NEAREST,
-                                                              cv2.INTER_LINEAR,
-                                                              cv2.INTER_CUBIC,
-                                                              cv2.INTER_AREA,
-                                                              cv2.INTER_LANCZOS4],
+                                         interpolation_modes=[
+                                             cv2.INTER_NEAREST,
+                                             cv2.INTER_LINEAR, cv2.INTER_CUBIC,
+                                             cv2.INTER_AREA, cv2.INTER_LANCZOS4
+                                         ],
                                          box_filter=self.box_filter,
                                          labels_format=self.labels_format)
 
@@ -67,8 +72,11 @@ class RandomScaleAugmentation:
         self.resize.labels_format = self.labels_format
         inverters = []
         for transform in self.sequence:
-            if return_inverter and ('return_inverter' in inspect.signature(transform).parameters):
-                image, labels, inverter = transform(image, labels, return_inverter=True)
+            if return_inverter and ('return_inverter' in inspect.signature(
+                    transform).parameters):
+                image, labels, inverter = transform(image,
+                                                    labels,
+                                                    return_inverter=True)
                 inverters.append(inverter)
             else:
                 image, labels = transform(image, labels)
@@ -78,6 +86,7 @@ class RandomScaleAugmentation:
         else:
             return image, labels
 
+
 class SSDRandomCrop:
     """
     Performs the same random crops as defined by the `batch_sampler` instructions
@@ -86,7 +95,14 @@ class SSDRandomCrop:
     https://arxiv.org/abs/1512.02325
     """
 
-    def __init__(self, labels_format={'class_id': 0, 'xmin': 1, 'ymin': 2, 'xmax': 3, 'ymax': 4}):
+    def __init__(self,
+                 labels_format={
+                     'class_id': 0,
+                     'xmin': 1,
+                     'ymin': 2,
+                     'xmax': 3,
+                     'ymax': 4
+                 }):
         """
         Arguments:
             labels_format (dict, optional): A dictionary that defines which index in the last axis of the labels
@@ -98,24 +114,22 @@ class SSDRandomCrop:
 
         # This randomly samples one of the lower IoU bounds defined
         # by the `sample_space` every time it is called.
-        self.bound_generator = BoundGenerator(sample_space=((None, None),
-                                                            (0.1, None),
-                                                            (0.3, None),
-                                                            (0.5, None),
-                                                            (0.7, None),
-                                                            (0.9, None)),
-                                              weights=None)
+        self.bound_generator = BoundGenerator(
+            sample_space=((None, None), (0.1, None), (0.3, None), (0.5, None),
+                          (0.7, None), (0.9, None)),
+            weights=None)
 
         # Produces coordinates for candidate patches such that the height
         # and width of the patches are between 0.3 and 1.0 of the height
         # and width of the respective image and the aspect ratio of the
         # patches is between 0.5 and 2.0.
-        self.patch_coord_generator = PatchCoordinateGenerator(must_match='h_w',
-                                                              min_scale=0.6,
-                                                              max_scale=1.0,
-                                                              scale_uniformly=False,
-                                                              min_aspect_ratio=0.5,
-                                                              max_aspect_ratio=2.0)
+        self.patch_coord_generator = PatchCoordinateGenerator(
+            must_match='h_w',
+            min_scale=0.6,
+            max_scale=1.0,
+            scale_uniformly=False,
+            min_aspect_ratio=0.5,
+            max_aspect_ratio=2.0)
 
         # Filters out boxes whose center point does not lie within the
         # chosen patches.
@@ -139,14 +153,15 @@ class SSDRandomCrop:
         # is returned unaltered. Runs a maximum of 50 trials to find a valid
         # patch for each new sampled IoU threshold. Every 50 trials, the original
         # image is returned as is with probability (1 - prob) = 0.143.
-        self.random_crop = RandomPatchInf(patch_coord_generator=self.patch_coord_generator,
-                                          box_filter=self.box_filter,
-                                          image_validator=self.image_validator,
-                                          bound_generator=self.bound_generator,
-                                          n_trials_max=50,
-                                          clip_boxes=True,
-                                          prob=0.857,
-                                          labels_format=self.labels_format)
+        self.random_crop = RandomPatchInf(
+            patch_coord_generator=self.patch_coord_generator,
+            box_filter=self.box_filter,
+            image_validator=self.image_validator,
+            bound_generator=self.bound_generator,
+            n_trials_max=50,
+            clip_boxes=True,
+            prob=0.857,
+            labels_format=self.labels_format)
 
     def __call__(self, image, labels=None, return_inverter=False):
         self.random_crop.labels_format = self.labels_format
@@ -158,13 +173,10 @@ class BoundGenerator:
     Generates pairs of floating point values that represent lower and upper bounds
     from a given sample space.
     """
+
     def __init__(self,
-                 sample_space=((0.1, None),
-                               (0.3, None),
-                               (0.5, None),
-                               (0.7, None),
-                               (0.9, None),
-                               (None, None)),
+                 sample_space=((0.1, None), (0.3, None), (0.5, None),
+                               (0.7, None), (0.9, None), (None, None)),
                  weights=None):
         """
         Arguments:
@@ -176,24 +188,29 @@ class BoundGenerator:
         """
 
         if (not (weights is None)) and len(weights) != len(sample_space):
-            raise ValueError("`weights` must either be `None` for uniform distribution or have the same length as `sample_space`.")
+            raise ValueError(
+                "`weights` must either be `None` for uniform distribution or have the same length as `sample_space`."
+            )
 
         self.sample_space = []
         for bound_pair in sample_space:
             if len(bound_pair) != 2:
-                raise ValueError("All elements of the sample space must be 2-tuples.")
+                raise ValueError(
+                    "All elements of the sample space must be 2-tuples.")
             bound_pair = list(bound_pair)
             if bound_pair[0] is None: bound_pair[0] = 0.0
             if bound_pair[1] is None: bound_pair[1] = 1.0
             if bound_pair[0] > bound_pair[1]:
-                raise ValueError("For all sample space elements, the lower bound "
-                                 "cannot be greater than the upper bound.")
+                raise ValueError(
+                    "For all sample space elements, the lower bound "
+                    "cannot be greater than the upper bound.")
             self.sample_space.append(bound_pair)
 
         self.sample_space_size = len(self.sample_space)
 
         if weights is None:
-            self.weights = [1.0/self.sample_space_size] * self.sample_space_size
+            self.weights = [1.0 / self.sample_space_size
+                            ] * self.sample_space_size
         else:
             self.weights = weights
 
@@ -218,7 +235,13 @@ class BoxFilter:
                  overlap_criterion='center_point',
                  overlap_bounds=(0.3, 1.0),
                  min_area=10,
-                 labels_format={'class_id': 0, 'xmin': 1, 'ymin': 2, 'xmax': 3, 'ymax': 4},
+                 labels_format={
+                     'class_id': 0,
+                     'xmin': 1,
+                     'ymin': 2,
+                     'xmax': 3,
+                     'ymax': 4
+                 },
                  border_pixels='half'):
         """
         Arguments:
@@ -260,11 +283,18 @@ class BoxFilter:
                 to the boxex, but not the other.
         """
         if not isinstance(overlap_bounds, (list, tuple, BoundGenerator)):
-            raise ValueError("`overlap_bounds` must be either a 2-tuple of scalars or a `BoundGenerator` object.")
-        if isinstance(overlap_bounds, (list, tuple)) and (overlap_bounds[0] > overlap_bounds[1]):
-            raise ValueError("The lower bound must not be greater than the upper bound.")
+            raise ValueError(
+                "`overlap_bounds` must be either a 2-tuple of scalars or a `BoundGenerator` object."
+            )
+        if isinstance(
+                overlap_bounds,
+            (list, tuple)) and (overlap_bounds[0] > overlap_bounds[1]):
+            raise ValueError(
+                "The lower bound must not be greater than the upper bound.")
         if not (overlap_criterion in {'iou', 'area', 'center_point'}):
-            raise ValueError("`overlap_criterion` must be one of 'iou', 'area', or 'center_point'.")
+            raise ValueError(
+                "`overlap_criterion` must be one of 'iou', 'area', or 'center_point'."
+            )
         self.overlap_criterion = overlap_criterion
         self.overlap_bounds = overlap_bounds
         self.min_area = min_area
@@ -274,10 +304,7 @@ class BoxFilter:
         self.labels_format = labels_format
         self.border_pixels = border_pixels
 
-    def __call__(self,
-                 labels,
-                 image_height=None,
-                 image_width=None):
+    def __call__(self, labels, image_height=None, image_width=None):
         """
         Arguments:
             labels (array): The labels to be filtered. This is an array with shape `(m,n)`, where
@@ -305,12 +332,14 @@ class BoxFilter:
 
         if self.check_degenerate:
 
-            non_degenerate = (labels[:, xmax] > labels[:, xmin]) * (labels[:, ymax] > labels[:, ymin])
+            non_degenerate = (labels[:, xmax] > labels[:, xmin]) * (
+                labels[:, ymax] > labels[:, ymin])
             requirements_met *= non_degenerate
 
         if self.check_min_area:
 
-            min_area_met = (labels[:, xmax] - labels[:, xmin]) * (labels[:, ymax] - labels[:, ymin]) >= self.min_area
+            min_area_met = (labels[:, xmax] - labels[:, xmin]) * (
+                labels[:, ymax] - labels[:, ymin]) >= self.min_area
             requirements_met *= min_area_met
 
         if self.check_overlap:
@@ -327,8 +356,13 @@ class BoxFilter:
                 # Compute the patch coordinates.
                 image_coords = np.array([0, 0, image_width, image_height])
                 # Compute the IoU between the patch and all of the ground truth boxes.
-                image_boxes_iou = iou(image_coords, labels[:, [xmin, ymin, xmax, ymax]], coords='corners', mode='element-wise', border_pixels=self.border_pixels)
-                requirements_met *= (image_boxes_iou > lower) * (image_boxes_iou <= upper)
+                image_boxes_iou = iou(image_coords,
+                                      labels[:, [xmin, ymin, xmax, ymax]],
+                                      coords='corners',
+                                      mode='element-wise',
+                                      border_pixels=self.border_pixels)
+                requirements_met *= (image_boxes_iou >
+                                     lower) * (image_boxes_iou <= upper)
 
             elif self.overlap_criterion == 'area':
                 if self.border_pixels == 'half':
@@ -340,18 +374,24 @@ class BoxFilter:
                     d = -1  # If border pixels are not supposed to belong to the bounding boxes,
                     # we have to subtract one pixel from any difference `xmax - xmin` or `ymax - ymin`.
                 # Compute the areas of the boxes.
-                box_areas = (labels[:, xmax] - labels[:, xmin] + d) * (labels[:, ymax] - labels[:, ymin] + d)
+                box_areas = (labels[:, xmax] - labels[:, xmin] +
+                             d) * (labels[:, ymax] - labels[:, ymin] + d)
                 # Compute the intersection area between the patch and all of the ground truth boxes.
                 clipped_boxes = np.copy(labels)
-                clipped_boxes[:, [ymin, ymax]] = np.clip(labels[:, [ymin, ymax]], a_min=0, a_max=image_height-1)
-                clipped_boxes[:, [xmin, xmax]] = np.clip(labels[:, [xmin, xmax]], a_min=0, a_max=image_width-1)
-                intersection_areas = (clipped_boxes[:,xmax] - clipped_boxes[:,xmin] + d) * (clipped_boxes[:,ymax] - clipped_boxes[:,ymin] + d) # +1 because the border pixels belong to the box areas.
+                clipped_boxes[:, [ymin, ymax]] = np.clip(
+                    labels[:, [ymin, ymax]], a_min=0, a_max=image_height - 1)
+                clipped_boxes[:, [xmin, xmax]] = np.clip(
+                    labels[:, [xmin, xmax]], a_min=0, a_max=image_width - 1)
+                intersection_areas = (
+                    clipped_boxes[:, xmax] - clipped_boxes[:, xmin] + d) * (
+                        clipped_boxes[:, ymax] - clipped_boxes[:, ymin] + d
+                    )  # +1 because the border pixels belong to the box areas.
                 # Check which boxes meet the overlap requirements.
                 if lower == 0.0:
                     mask_lower = intersection_areas > lower * box_areas  # If `self.lower == 0`, we want to
                     # make sure that boxes with area 0 don't count, hence the ">" sign instead of the ">=" sign.
                 else:
-                    mask_lower = intersection_areas >= lower * box_areas # Especially for the case `self.lower == 1`
+                    mask_lower = intersection_areas >= lower * box_areas  # Especially for the case `self.lower == 1`
                     # we want the ">=" sign, otherwise no boxes would count at all.
                 mask_upper = intersection_areas <= upper * box_areas
                 requirements_met *= mask_lower * mask_upper
@@ -361,7 +401,8 @@ class BoxFilter:
                 cy = (labels[:, ymin] + labels[:, ymax]) / 2
                 cx = (labels[:, xmin] + labels[:, xmax]) / 2
                 # Check which of the boxes have center points within the cropped patch remove those that don't.
-                requirements_met *= (cy >= 0.0) * (cy <= image_height-1) * (cx >= 0.0) * (cx <= image_width-1)
+                requirements_met *= (cy >= 0.0) * (cy <= image_height - 1) * (
+                    cx >= 0.0) * (cx <= image_width - 1)
 
         return labels[requirements_met]
 
@@ -376,7 +417,13 @@ class ImageValidator:
                  overlap_criterion='center_point',
                  bounds=(0.3, 1.0),
                  n_boxes_min=1,
-                 labels_format={'class_id': 0, 'xmin': 1, 'ymin': 2, 'xmax': 3, 'ymax': 4},
+                 labels_format={
+                     'class_id': 0,
+                     'xmin': 1,
+                     'ymin': 2,
+                     'xmax': 3,
+                     'ymax': 4
+                 },
                  border_pixels='half'):
         """
         Arguments:
@@ -403,8 +450,10 @@ class ImageValidator:
                 If 'half', then one of each of the two horizontal and vertical borders belong
                 to the boxex, but not the other.
         """
-        if not ((isinstance(n_boxes_min, int) and n_boxes_min > 0) or n_boxes_min == 'all'):
-            raise ValueError("`n_boxes_min` must be a positive integer or 'all'.")
+        if not ((isinstance(n_boxes_min, int) and n_boxes_min > 0)
+                or n_boxes_min == 'all'):
+            raise ValueError(
+                "`n_boxes_min` must be a positive integer or 'all'.")
         self.overlap_criterion = overlap_criterion
         self.bounds = bounds
         self.n_boxes_min = n_boxes_min
@@ -418,10 +467,7 @@ class ImageValidator:
                                     labels_format=self.labels_format,
                                     border_pixels=self.border_pixels)
 
-    def __call__(self,
-                 labels,
-                 image_height,
-                 image_width):
+    def __call__(self, labels, image_height, image_width):
         """
         Arguments:
             labels (array): The labels to be tested. The box coordinates are expected
@@ -455,6 +501,8 @@ class ImageValidator:
                 return True
             else:
                 return False
+
+
 class RandomPatchInf:
     """
     Randomly samples a patch from an image. The randomness refers to whatever
@@ -479,8 +527,14 @@ class RandomPatchInf:
                  n_trials_max=50,
                  clip_boxes=True,
                  prob=0.857,
-                 background=(0,0,0),
-                 labels_format={'class_id': 0, 'xmin': 1, 'ymin': 2, 'xmax': 3, 'ymax': 4}):
+                 background=(0, 0, 0),
+                 labels_format={
+                     'class_id': 0,
+                     'xmin': 1,
+                     'ymin': 2,
+                     'xmax': 3,
+                     'ymax': 4
+                 }):
         """
         Arguments:
             patch_coord_generator (PatchCoordinateGenerator): A `PatchCoordinateGenerator` object
@@ -514,11 +568,19 @@ class RandomPatchInf:
         """
 
         if not isinstance(patch_coord_generator, PatchCoordinateGenerator):
-            raise ValueError("`patch_coord_generator` must be an instance of `PatchCoordinateGenerator`.")
-        if not (isinstance(image_validator, ImageValidator) or image_validator is None):
-            raise ValueError("`image_validator` must be either `None` or an `ImageValidator` object.")
-        if not (isinstance(bound_generator, BoundGenerator) or bound_generator is None):
-            raise ValueError("`bound_generator` must be either `None` or a `BoundGenerator` object.")
+            raise ValueError(
+                "`patch_coord_generator` must be an instance of `PatchCoordinateGenerator`."
+            )
+        if not (isinstance(image_validator, ImageValidator)
+                or image_validator is None):
+            raise ValueError(
+                "`image_validator` must be either `None` or an `ImageValidator` object."
+            )
+        if not (isinstance(bound_generator, BoundGenerator)
+                or bound_generator is None):
+            raise ValueError(
+                "`bound_generator` must be either `None` or a `BoundGenerator` object."
+            )
         self.patch_coord_generator = patch_coord_generator
         self.box_filter = box_filter
         self.image_validator = image_validator
@@ -555,11 +617,12 @@ class RandomPatchInf:
 
         while True:  # Keep going until we either find a valid patch or return the original image.
 
-            p = np.random.uniform(0,1)
-            if p >= (1.0-self.prob):
+            p = np.random.uniform(0, 1)
+            if p >= (1.0 - self.prob):
 
                 # In case we have a bound generator, pick a lower and upper bound for the patch validator.
-                if not ((self.image_validator is None) or (self.bound_generator is None)):
+                if not ((self.image_validator is None) or
+                        (self.bound_generator is None)):
                     self.image_validator.bounds = self.bound_generator()
 
                 # Use at most `self.n_trials_max` attempts to find a crop
@@ -567,7 +630,8 @@ class RandomPatchInf:
                 for _ in range(max(1, self.n_trials_max)):
 
                     # Generate patch coordinates.
-                    patch_ymin, patch_xmin, patch_height, patch_width = self.patch_coord_generator()
+                    patch_ymin, patch_xmin, patch_height, patch_width = self.patch_coord_generator(
+                    )
 
                     self.sample_patch.patch_ymin = patch_ymin
                     self.sample_patch.patch_xmin = patch_xmin
@@ -576,12 +640,15 @@ class RandomPatchInf:
 
                     # Check if the resulting patch meets the aspect ratio requirements.
                     aspect_ratio = patch_width / patch_height
-                    if not (self.patch_coord_generator.min_aspect_ratio <= aspect_ratio <= self.patch_coord_generator.max_aspect_ratio):
+                    if not (self.patch_coord_generator.min_aspect_ratio <=
+                            aspect_ratio <=
+                            self.patch_coord_generator.max_aspect_ratio):
                         continue
 
                     if (labels is None) or (self.image_validator is None):
                         # We either don't have any boxes or if we do, we will accept any outcome as valid.
-                        return self.sample_patch(image, labels, return_inverter)
+                        return self.sample_patch(image, labels,
+                                                 return_inverter)
                     else:
                         # Translate the box coordinates to the patch's coordinate system.
                         new_labels = np.copy(labels)
@@ -591,9 +658,11 @@ class RandomPatchInf:
                         if self.image_validator(labels=new_labels,
                                                 image_height=patch_height,
                                                 image_width=patch_width):
-                            return self.sample_patch(image, labels, return_inverter)
+                            return self.sample_patch(image, labels,
+                                                     return_inverter)
             else:
                 if return_inverter:
+
                     def inverter(labels):
                         return labels
 
@@ -681,13 +750,18 @@ class PatchCoordinateGenerator:
         """
 
         if not (must_match in {'h_w', 'h_ar', 'w_ar'}):
-            raise ValueError("`must_match` must be either of 'h_w', 'h_ar' and 'w_ar'.")
+            raise ValueError(
+                "`must_match` must be either of 'h_w', 'h_ar' and 'w_ar'.")
         if min_scale >= max_scale:
             raise ValueError("It must be `min_scale < max_scale`.")
         if min_aspect_ratio >= max_aspect_ratio:
-            raise ValueError("It must be `min_aspect_ratio < max_aspect_ratio`.")
-        if scale_uniformly and not ((patch_height is None) and (patch_width is None)):
-            raise ValueError("If `scale_uniformly == True`, `patch_height` and `patch_width` must both be `None`.")
+            raise ValueError(
+                "It must be `min_aspect_ratio < max_aspect_ratio`.")
+        if scale_uniformly and not ((patch_height is None) and
+                                    (patch_width is None)):
+            raise ValueError(
+                "If `scale_uniformly == True`, `patch_height` and `patch_width` must both be `None`."
+            )
         self.img_height = img_height
         self.img_width = img_width
         self.must_match = must_match
@@ -711,46 +785,57 @@ class PatchCoordinateGenerator:
 
         # Get the patch height and width.
 
-        if self.must_match == 'h_w': # Aspect is the dependent variable.
+        if self.must_match == 'h_w':  # Aspect is the dependent variable.
             if not self.scale_uniformly:
                 # Get the height.
                 if self.patch_height is None:
-                    patch_height = int(np.random.uniform(self.min_scale, self.max_scale) * self.img_height)
+                    patch_height = int(
+                        np.random.uniform(self.min_scale, self.max_scale) *
+                        self.img_height)
                 else:
                     patch_height = self.patch_height
                 # Get the width.
                 if self.patch_width is None:
-                    patch_width = int(np.random.uniform(self.min_scale, self.max_scale) * self.img_width)
+                    patch_width = int(
+                        np.random.uniform(self.min_scale, self.max_scale) *
+                        self.img_width)
                 else:
                     patch_width = self.patch_width
             else:
-                scaling_factor = np.random.uniform(self.min_scale, self.max_scale)
+                scaling_factor = np.random.uniform(self.min_scale,
+                                                   self.max_scale)
                 patch_height = int(scaling_factor * self.img_height)
                 patch_width = int(scaling_factor * self.img_width)
 
         elif self.must_match == 'h_ar':  # Width is the dependent variable.
             # Get the height.
             if self.patch_height is None:
-                patch_height = int(np.random.uniform(self.min_scale, self.max_scale) * self.img_height)
+                patch_height = int(
+                    np.random.uniform(self.min_scale, self.max_scale) *
+                    self.img_height)
             else:
                 patch_height = self.patch_height
             # Get the aspect ratio.
             if self.patch_aspect_ratio is None:
-                patch_aspect_ratio = np.random.uniform(self.min_aspect_ratio, self.max_aspect_ratio)
+                patch_aspect_ratio = np.random.uniform(self.min_aspect_ratio,
+                                                       self.max_aspect_ratio)
             else:
                 patch_aspect_ratio = self.patch_aspect_ratio
             # Get the width.
             patch_width = int(patch_height * patch_aspect_ratio)
 
-        elif self.must_match == 'w_ar': # Height is the dependent variable.
+        elif self.must_match == 'w_ar':  # Height is the dependent variable.
             # Get the width.
             if self.patch_width is None:
-                patch_width = int(np.random.uniform(self.min_scale, self.max_scale) * self.img_width)
+                patch_width = int(
+                    np.random.uniform(self.min_scale, self.max_scale) *
+                    self.img_width)
             else:
                 patch_width = self.patch_width
             # Get the aspect ratio.
             if self.patch_aspect_ratio is None:
-                patch_aspect_ratio = np.random.uniform(self.min_aspect_ratio, self.max_aspect_ratio)
+                patch_aspect_ratio = np.random.uniform(self.min_aspect_ratio,
+                                                       self.max_aspect_ratio)
             else:
                 patch_aspect_ratio = self.patch_aspect_ratio
             # Get the height.
@@ -765,8 +850,14 @@ class PatchCoordinateGenerator:
             # image in the vertical dimension.
             y_range = self.img_height - patch_height
             # Select a random top left corner for the sample position from the possible positions.
-            if y_range >= 0: patch_ymin = np.random.randint(0, y_range + 1)  # There are y_range + 1 possible positions for the crop in the vertical dimension.
-            else: patch_ymin = np.random.randint(y_range, 1)  # The possible positions for the image on the background canvas in the vertical dimension.
+            if y_range >= 0:
+                patch_ymin = np.random.randint(
+                    0, y_range + 1
+                )  # There are y_range + 1 possible positions for the crop in the vertical dimension.
+            else:
+                patch_ymin = np.random.randint(
+                    y_range, 1
+                )  # The possible positions for the image on the background canvas in the vertical dimension.
         else:
             patch_ymin = self.patch_ymin
 
@@ -777,12 +868,19 @@ class PatchCoordinateGenerator:
             # image in the horizontal dimension.
             x_range = self.img_width - patch_width
             # Select a random top left corner for the sample position from the possible positions.
-            if x_range >= 0: patch_xmin = np.random.randint(0, x_range + 1) # There are x_range + 1 possible positions for the crop in the horizontal dimension.
-            else: patch_xmin = np.random.randint(x_range, 1) # The possible positions for the image on the background canvas in the horizontal dimension.
+            if x_range >= 0:
+                patch_xmin = np.random.randint(
+                    0, x_range + 1
+                )  # There are x_range + 1 possible positions for the crop in the horizontal dimension.
+            else:
+                patch_xmin = np.random.randint(
+                    x_range, 1
+                )  # The possible positions for the image on the background canvas in the horizontal dimension.
         else:
             patch_xmin = self.patch_xmin
 
         return patch_ymin, patch_xmin, patch_height, patch_width
+
 
 class CropPad:
     """
@@ -808,8 +906,14 @@ class CropPad:
                  patch_width,
                  clip_boxes=True,
                  box_filter=None,
-                 background=(0,0,0),
-                 labels_format={'class_id': 0, 'xmin': 1, 'ymin': 2, 'xmax': 3, 'ymax': 4}):
+                 background=(0, 0, 0),
+                 labels_format={
+                     'class_id': 0,
+                     'xmin': 1,
+                     'ymin': 2,
+                     'xmax': 3,
+                     'ymax': 4
+                 }):
         """
         Arguments:
             patch_ymin (int, optional): The vertical coordinate of the top left corner of the output
@@ -841,7 +945,8 @@ class CropPad:
         #if (patch_ymin + patch_height < 0) or (patch_xmin + patch_width < 0):
         #    raise ValueError("A patch with the given coordinates cannot overlap with an input image.")
         if not (isinstance(box_filter, BoxFilter) or box_filter is None):
-            raise ValueError("`box_filter` must be either `None` or a `BoxFilter` object.")
+            raise ValueError(
+                "`box_filter` must be either `None` or a `BoxFilter` object.")
         self.patch_height = patch_height
         self.patch_width = patch_width
         self.patch_ymin = patch_ymin
@@ -856,7 +961,8 @@ class CropPad:
         img_height, img_width = image.shape[:2]
 
         if (self.patch_ymin > img_height) or (self.patch_xmin > img_width):
-            raise ValueError("The given patch doesn't overlap with the input image.")
+            raise ValueError(
+                "The given patch doesn't overlap with the input image.")
 
         labels = np.copy(labels)
 
@@ -871,40 +977,69 @@ class CropPad:
 
         # Create a canvas of the size of the patch we want to end up with.
         if image.ndim == 3:
-            canvas = np.zeros(shape=(self.patch_height, self.patch_width, 3), dtype=np.uint8)
+            canvas = np.zeros(shape=(self.patch_height, self.patch_width, 3),
+                              dtype=np.uint8)
             canvas[:, :] = self.background
         elif image.ndim == 2:
-            canvas = np.zeros(shape=(self.patch_height, self.patch_width), dtype=np.uint8)
+            canvas = np.zeros(shape=(self.patch_height, self.patch_width),
+                              dtype=np.uint8)
             canvas[:, :] = self.background[0]
 
         # Perform the crop.
-        if patch_ymin < 0 and patch_xmin < 0: # Pad the image at the top and on the left.
-            image_crop_height = min(img_height, self.patch_height + patch_ymin)  # The number of pixels of the image that will end up on the canvas in the vertical direction.
-            image_crop_width = min(img_width, self.patch_width + patch_xmin) # The number of pixels of the image that will end up on the canvas in the horizontal direction.
-            canvas[-patch_ymin:-patch_ymin + image_crop_height, -patch_xmin:-patch_xmin + image_crop_width] = image[:image_crop_height, :image_crop_width]
+        if patch_ymin < 0 and patch_xmin < 0:  # Pad the image at the top and on the left.
+            image_crop_height = min(
+                img_height, self.patch_height + patch_ymin
+            )  # The number of pixels of the image that will end up on the canvas in the vertical direction.
+            image_crop_width = min(
+                img_width, self.patch_width + patch_xmin
+            )  # The number of pixels of the image that will end up on the canvas in the horizontal direction.
+            canvas[-patch_ymin:-patch_ymin +
+                   image_crop_height, -patch_xmin:-patch_xmin +
+                   image_crop_width] = image[:image_crop_height, :
+                                             image_crop_width]
 
-        elif patch_ymin < 0 and patch_xmin >= 0: # Pad the image at the top and crop it on the left.
-            image_crop_height = min(img_height, self.patch_height + patch_ymin)  # The number of pixels of the image that will end up on the canvas in the vertical direction.
-            image_crop_width = min(self.patch_width, img_width - patch_xmin) # The number of pixels of the image that will end up on the canvas in the horizontal direction.
-            canvas[-patch_ymin:-patch_ymin + image_crop_height, :image_crop_width] = image[:image_crop_height, patch_xmin:patch_xmin + image_crop_width]
+        elif patch_ymin < 0 and patch_xmin >= 0:  # Pad the image at the top and crop it on the left.
+            image_crop_height = min(
+                img_height, self.patch_height + patch_ymin
+            )  # The number of pixels of the image that will end up on the canvas in the vertical direction.
+            image_crop_width = min(
+                self.patch_width, img_width - patch_xmin
+            )  # The number of pixels of the image that will end up on the canvas in the horizontal direction.
+            canvas[-patch_ymin:-patch_ymin + image_crop_height, :
+                   image_crop_width] = image[:image_crop_height, patch_xmin:
+                                             patch_xmin + image_crop_width]
 
-        elif patch_ymin >= 0 and patch_xmin < 0: # Crop the image at the top and pad it on the left.
-            image_crop_height = min(self.patch_height, img_height - patch_ymin) # The number of pixels of the image that will end up on the canvas in the vertical direction.
-            image_crop_width = min(img_width, self.patch_width + patch_xmin) # The number of pixels of the image that will end up on the canvas in the horizontal direction.
-            canvas[:image_crop_height, -patch_xmin:-patch_xmin + image_crop_width] = image[patch_ymin:patch_ymin + image_crop_height, :image_crop_width]
+        elif patch_ymin >= 0 and patch_xmin < 0:  # Crop the image at the top and pad it on the left.
+            image_crop_height = min(
+                self.patch_height, img_height - patch_ymin
+            )  # The number of pixels of the image that will end up on the canvas in the vertical direction.
+            image_crop_width = min(
+                img_width, self.patch_width + patch_xmin
+            )  # The number of pixels of the image that will end up on the canvas in the horizontal direction.
+            canvas[:image_crop_height, -patch_xmin:-patch_xmin +
+                   image_crop_width] = image[patch_ymin:patch_ymin +
+                                             image_crop_height, :
+                                             image_crop_width]
 
-        elif patch_ymin >= 0 and patch_xmin >= 0: # Crop the image at the top and on the left.
-            image_crop_height = min(self.patch_height, img_height - patch_ymin) # The number of pixels of the image that will end up on the canvas in the vertical direction.
-            image_crop_width = min(self.patch_width, img_width - patch_xmin) # The number of pixels of the image that will end up on the canvas in the horizontal direction.
-            canvas[:image_crop_height, :image_crop_width] = image[patch_ymin:patch_ymin + image_crop_height, patch_xmin:patch_xmin + image_crop_width]
+        elif patch_ymin >= 0 and patch_xmin >= 0:  # Crop the image at the top and on the left.
+            image_crop_height = min(
+                self.patch_height, img_height - patch_ymin
+            )  # The number of pixels of the image that will end up on the canvas in the vertical direction.
+            image_crop_width = min(
+                self.patch_width, img_width - patch_xmin
+            )  # The number of pixels of the image that will end up on the canvas in the horizontal direction.
+            canvas[:image_crop_height, :image_crop_width] = image[
+                patch_ymin:patch_ymin +
+                image_crop_height, patch_xmin:patch_xmin + image_crop_width]
 
         image = canvas
 
         if return_inverter:
+
             def inverter(labels):
                 labels = np.copy(labels)
-                labels[:, [ymin+1, ymax+1]] += patch_ymin
-                labels[:, [xmin+1, xmax+1]] += patch_xmin
+                labels[:, [ymin + 1, ymax + 1]] += patch_ymin
+                labels[:, [xmin + 1, xmax + 1]] += patch_xmin
                 return labels
 
         if not (labels is None):
@@ -921,8 +1056,12 @@ class CropPad:
                                          image_width=self.patch_width)
 
             if self.clip_boxes:
-                labels[:,[ymin,ymax]] = np.clip(labels[:,[ymin,ymax]], a_min=0, a_max=self.patch_height-1)
-                labels[:,[xmin,xmax]] = np.clip(labels[:,[xmin,xmax]], a_min=0, a_max=self.patch_width-1)
+                labels[:, [ymin, ymax]] = np.clip(labels[:, [ymin, ymax]],
+                                                  a_min=0,
+                                                  a_max=self.patch_height - 1)
+                labels[:, [xmin, xmax]] = np.clip(labels[:, [xmin, xmax]],
+                                                  a_min=0,
+                                                  a_max=self.patch_width - 1)
 
             if return_inverter:
                 return image, labels, inverter
@@ -935,6 +1074,7 @@ class CropPad:
             else:
                 return image
 
+
 class Resize:
     """
     Resizes images to a specified height and width in pixels.
@@ -945,7 +1085,13 @@ class Resize:
                  width,
                  interpolation_mode=cv2.INTER_LINEAR,
                  box_filter=None,
-                 labels_format={'class_id': 0, 'xmin': 1, 'ymin': 2, 'xmax': 3, 'ymax': 4}):
+                 labels_format={
+                     'class_id': 0,
+                     'xmin': 1,
+                     'ymin': 2,
+                     'xmax': 3,
+                     'ymax': 4
+                 }):
         """
         Arguments:
             height (int): The desired height of the output images in pixels.
@@ -962,7 +1108,8 @@ class Resize:
                 'xmin', 'ymin', 'xmax', and 'ymax' to their respective indices within last axis of the labels array.
         """
         if not (isinstance(box_filter, BoxFilter) or box_filter is None):
-            raise ValueError("`box_filter` must be either `None` or a `BoxFilter` object.")
+            raise ValueError(
+                "`box_filter` must be either `None` or a `BoxFilter` object.")
         self.out_height = height
         self.out_width = width
         self.interpolation_mode = interpolation_mode
@@ -983,10 +1130,17 @@ class Resize:
                            interpolation=self.interpolation_mode)
 
         if return_inverter:
+
             def inverter(labels):
                 labels = np.copy(labels)
-                labels[:, [ymin+1, ymax+1]] = np.round(labels[:, [ymin+1, ymax+1]] * (img_height / self.out_height), decimals=0)
-                labels[:, [xmin+1, xmax+1]] = np.round(labels[:, [xmin+1, xmax+1]] * (img_width / self.out_width), decimals=0)
+                labels[:, [ymin + 1, ymax +
+                           1]] = np.round(labels[:, [ymin + 1, ymax + 1]] *
+                                          (img_height / self.out_height),
+                                          decimals=0)
+                labels[:, [xmin + 1, xmax +
+                           1]] = np.round(labels[:, [xmin + 1, xmax + 1]] *
+                                          (img_width / self.out_width),
+                                          decimals=0)
                 return labels
 
         if labels is None:
@@ -996,8 +1150,12 @@ class Resize:
                 return image
         else:
             labels = np.copy(labels)
-            labels[:, [ymin, ymax]] = np.round(labels[:, [ymin, ymax]] * (self.out_height / img_height), decimals=0)
-            labels[:, [xmin, xmax]] = np.round(labels[:, [xmin, xmax]] * (self.out_width / img_width), decimals=0)
+            labels[:, [ymin, ymax]] = np.round(labels[:, [ymin, ymax]] *
+                                               (self.out_height / img_height),
+                                               decimals=0)
+            labels[:, [xmin, xmax]] = np.round(labels[:, [xmin, xmax]] *
+                                               (self.out_width / img_width),
+                                               decimals=0)
             # labels[:, [ymin, ymax]] = labels[:, [ymin, ymax]] * (self.out_height / img_height)
             # labels[:, [xmin, xmax]] = labels[:, [xmin, xmax]] * (self.out_width / img_width)
             if not (self.box_filter is None):
@@ -1012,8 +1170,6 @@ class Resize:
                 return image, labels
 
 
-
-
 class ResizeRandomInterp:
     """
     Resizes images to a specified height and width in pixels using a radnomly
@@ -1023,13 +1179,18 @@ class ResizeRandomInterp:
     def __init__(self,
                  height,
                  width,
-                 interpolation_modes=[cv2.INTER_NEAREST,
-                                      cv2.INTER_LINEAR,
-                                      cv2.INTER_CUBIC,
-                                      cv2.INTER_AREA,
-                                      cv2.INTER_LANCZOS4],
+                 interpolation_modes=[
+                     cv2.INTER_NEAREST, cv2.INTER_LINEAR, cv2.INTER_CUBIC,
+                     cv2.INTER_AREA, cv2.INTER_LANCZOS4
+                 ],
                  box_filter=None,
-                 labels_format={'class_id': 0, 'xmin': 1, 'ymin': 2, 'xmax': 3, 'ymax': 4}):
+                 labels_format={
+                     'class_id': 0,
+                     'xmin': 1,
+                     'ymin': 2,
+                     'xmax': 3,
+                     'ymax': 4
+                 }):
         """
         Arguments:
             height (int): The desired height of the output image in pixels.
@@ -1058,7 +1219,8 @@ class ResizeRandomInterp:
                              labels_format=self.labels_format)
 
     def __call__(self, image, labels=None, return_inverter=False):
-        self.resize.interpolation_mode = np.random.choice(self.interpolation_modes)
+        self.resize.interpolation_mode = np.random.choice(
+            self.interpolation_modes)
         self.resize.labels_format = self.labels_format
         return self.resize(image, labels, return_inverter)
 
@@ -1101,39 +1263,67 @@ def convert_coordinates(tensor, start_index, conversion, border_pixels='half'):
     ind = start_index
     tensor1 = np.copy(tensor).astype(np.float)
     if conversion == 'minmax2centroids':
-        tensor1[..., ind] = (tensor[..., ind] + tensor[..., ind+1]) / 2.0 # Set cx
-        tensor1[..., ind+1] = (tensor[..., ind+2] + tensor[..., ind+3]) / 2.0 # Set cy
-        tensor1[..., ind+2] = tensor[..., ind+1] - tensor[..., ind] + d # Set w
-        tensor1[..., ind+3] = tensor[..., ind+3] - tensor[..., ind+2] + d # Set h
+        tensor1[..., ind] = (tensor[..., ind] +
+                             tensor[..., ind + 1]) / 2.0  # Set cx
+        tensor1[..., ind + 1] = (tensor[..., ind + 2] +
+                                 tensor[..., ind + 3]) / 2.0  # Set cy
+        tensor1[..., ind +
+                2] = tensor[..., ind + 1] - tensor[..., ind] + d  # Set w
+        tensor1[..., ind +
+                3] = tensor[..., ind + 3] - tensor[..., ind + 2] + d  # Set h
     elif conversion == 'centroids2minmax':
-        tensor1[..., ind] = tensor[..., ind] - tensor[..., ind+2] / 2.0 # Set xmin
-        tensor1[..., ind+1] = tensor[..., ind] + tensor[..., ind+2] / 2.0 # Set xmax
-        tensor1[..., ind+2] = tensor[..., ind+1] - tensor[..., ind+3] / 2.0 # Set ymin
-        tensor1[..., ind+3] = tensor[..., ind+1] + tensor[..., ind+3] / 2.0 # Set ymax
+        tensor1[..., ind] = tensor[..., ind] - tensor[..., ind +
+                                                      2] / 2.0  # Set xmin
+        tensor1[..., ind +
+                1] = tensor[..., ind] + tensor[..., ind + 2] / 2.0  # Set xmax
+        tensor1[..., ind +
+                2] = tensor[..., ind +
+                            1] - tensor[..., ind + 3] / 2.0  # Set ymin
+        tensor1[..., ind +
+                3] = tensor[..., ind +
+                            1] + tensor[..., ind + 3] / 2.0  # Set ymax
     elif conversion == 'corners2centroids':
-        tensor1[..., ind] = (tensor[..., ind] + tensor[..., ind+2]) / 2.0 # Set cx
-        tensor1[..., ind+1] = (tensor[..., ind+1] + tensor[..., ind+3]) / 2.0 # Set cy
-        tensor1[..., ind+2] = tensor[..., ind+2] - tensor[..., ind] + d # Set w
-        tensor1[..., ind+3] = tensor[..., ind+3] - tensor[..., ind+1] + d # Set h
+        tensor1[..., ind] = (tensor[..., ind] +
+                             tensor[..., ind + 2]) / 2.0  # Set cx
+        tensor1[..., ind + 1] = (tensor[..., ind + 1] +
+                                 tensor[..., ind + 3]) / 2.0  # Set cy
+        tensor1[..., ind +
+                2] = tensor[..., ind + 2] - tensor[..., ind] + d  # Set w
+        tensor1[..., ind +
+                3] = tensor[..., ind + 3] - tensor[..., ind + 1] + d  # Set h
     elif conversion == 'centroids2corners':
-        tensor1[..., ind] = tensor[..., ind] - tensor[..., ind+2] / 2.0 # Set xmin
-        tensor1[..., ind+1] = tensor[..., ind+1] - tensor[..., ind+3] / 2.0 # Set ymin
-        tensor1[..., ind+2] = tensor[..., ind] + tensor[..., ind+2] / 2.0 # Set xmax
-        tensor1[..., ind+3] = tensor[..., ind+1] + tensor[..., ind+3] / 2.0 # Set ymax
+        tensor1[..., ind] = tensor[..., ind] - tensor[..., ind +
+                                                      2] / 2.0  # Set xmin
+        tensor1[..., ind +
+                1] = tensor[..., ind +
+                            1] - tensor[..., ind + 3] / 2.0  # Set ymin
+        tensor1[..., ind +
+                2] = tensor[..., ind] + tensor[..., ind + 2] / 2.0  # Set xmax
+        tensor1[..., ind +
+                3] = tensor[..., ind +
+                            1] + tensor[..., ind + 3] / 2.0  # Set ymax
     elif (conversion == 'minmax2corners') or (conversion == 'corners2minmax'):
-        tensor1[..., ind+1] = tensor[..., ind+2]
-        tensor1[..., ind+2] = tensor[..., ind+1]
+        tensor1[..., ind + 1] = tensor[..., ind + 2]
+        tensor1[..., ind + 2] = tensor[..., ind + 1]
     else:
-        raise ValueError("Unexpected conversion value. Supported values are 'minmax2centroids', 'centroids2minmax', 'corners2centroids', 'centroids2corners', 'minmax2corners', and 'corners2minmax'.")
+        raise ValueError(
+            "Unexpected conversion value. Supported values are 'minmax2centroids', 'centroids2minmax', 'corners2centroids', 'centroids2corners', 'minmax2corners', and 'corners2minmax'."
+        )
 
     return tensor1
-def intersection_area_(boxes1, boxes2, coords='corners', mode='outer_product', border_pixels='half'):
+
+
+def intersection_area_(boxes1,
+                       boxes2,
+                       coords='corners',
+                       mode='outer_product',
+                       border_pixels='half'):
     """
     The same as 'intersection_area()' but for internal use, i.e. without all the safety checks.
     """
 
-    m = boxes1.shape[0] # The number of boxes in `boxes1`
-    n = boxes2.shape[0] # The number of boxes in `boxes2`
+    m = boxes1.shape[0]  # The number of boxes in `boxes1`
+    n = boxes2.shape[0]  # The number of boxes in `boxes2`
 
     # Set the correct coordinate indices for the respective formats.
     if coords == 'corners':
@@ -1150,9 +1340,9 @@ def intersection_area_(boxes1, boxes2, coords='corners', mode='outer_product', b
     if border_pixels == 'half':
         d = 0
     elif border_pixels == 'include':
-        d = 1 # If border pixels are supposed to belong to the bounding boxes, we have to add one pixel to any difference `xmax - xmin` or `ymax - ymin`.
+        d = 1  # If border pixels are supposed to belong to the bounding boxes, we have to add one pixel to any difference `xmax - xmin` or `ymax - ymin`.
     elif border_pixels == 'exclude':
-        d = -1 # If border pixels are not supposed to belong to the bounding boxes, we have to subtract one pixel from any difference `xmax - xmin` or `ymax - ymin`.
+        d = -1  # If border pixels are not supposed to belong to the bounding boxes, we have to subtract one pixel from any difference `xmax - xmin` or `ymax - ymin`.
 
     # Compute the intersection areas.
 
@@ -1160,31 +1350,41 @@ def intersection_area_(boxes1, boxes2, coords='corners', mode='outer_product', b
 
         # For all possible box combinations, get the greater xmin and ymin values.
         # This is a tensor of shape (m,n,2).
-        min_xy = np.maximum(np.tile(np.expand_dims(boxes1[:,[xmin,ymin]], axis=1), reps=(1, n, 1)),
-                            np.tile(np.expand_dims(boxes2[:,[xmin,ymin]], axis=0), reps=(m, 1, 1)))
+        min_xy = np.maximum(
+            np.tile(np.expand_dims(boxes1[:, [xmin, ymin]], axis=1),
+                    reps=(1, n, 1)),
+            np.tile(np.expand_dims(boxes2[:, [xmin, ymin]], axis=0),
+                    reps=(m, 1, 1)))
 
         # For all possible box combinations, get the smaller xmax and ymax values.
         # This is a tensor of shape (m,n,2).
-        max_xy = np.minimum(np.tile(np.expand_dims(boxes1[:,[xmax,ymax]], axis=1), reps=(1, n, 1)),
-                            np.tile(np.expand_dims(boxes2[:,[xmax,ymax]], axis=0), reps=(m, 1, 1)))
+        max_xy = np.minimum(
+            np.tile(np.expand_dims(boxes1[:, [xmax, ymax]], axis=1),
+                    reps=(1, n, 1)),
+            np.tile(np.expand_dims(boxes2[:, [xmax, ymax]], axis=0),
+                    reps=(m, 1, 1)))
 
         # Compute the side lengths of the intersection rectangles.
         side_lengths = np.maximum(0, max_xy - min_xy + d)
 
-        return side_lengths[:,:,0] * side_lengths[:,:,1]
+        return side_lengths[:, :, 0] * side_lengths[:, :, 1]
 
     elif mode == 'element-wise':
 
-        min_xy = np.maximum(boxes1[:,[xmin,ymin]], boxes2[:,[xmin,ymin]])
-        max_xy = np.minimum(boxes1[:,[xmax,ymax]], boxes2[:,[xmax,ymax]])
+        min_xy = np.maximum(boxes1[:, [xmin, ymin]], boxes2[:, [xmin, ymin]])
+        max_xy = np.minimum(boxes1[:, [xmax, ymax]], boxes2[:, [xmax, ymax]])
 
         # Compute the side lengths of the intersection rectangles.
         side_lengths = np.maximum(0, max_xy - min_xy + d)
 
-        return side_lengths[:,0] * side_lengths[:,1]
+        return side_lengths[:, 0] * side_lengths[:, 1]
 
 
-def iou(boxes1, boxes2, coords='centroids', mode='outer_product', border_pixels='half'):
+def iou(boxes1,
+        boxes2,
+        coords='centroids',
+        mode='outer_product',
+        border_pixels='half'):
     """
     Computes the intersection-over-union similarity (also known as Jaccard similarity)
     of two sets of axis-aligned 2D rectangular boxes.
@@ -1225,31 +1425,52 @@ def iou(boxes1, boxes2, coords='centroids', mode='outer_product', border_pixels=
     """
 
     # Make sure the boxes have the right shapes.
-    if boxes1.ndim > 2: raise ValueError("boxes1 must have rank either 1 or 2, but has rank {}.".format(boxes1.ndim))
-    if boxes2.ndim > 2: raise ValueError("boxes2 must have rank either 1 or 2, but has rank {}.".format(boxes2.ndim))
+    if boxes1.ndim > 2:
+        raise ValueError(
+            "boxes1 must have rank either 1 or 2, but has rank {}.".format(
+                boxes1.ndim))
+    if boxes2.ndim > 2:
+        raise ValueError(
+            "boxes2 must have rank either 1 or 2, but has rank {}.".format(
+                boxes2.ndim))
 
     if boxes1.ndim == 1: boxes1 = np.expand_dims(boxes1, axis=0)
     if boxes2.ndim == 1: boxes2 = np.expand_dims(boxes2, axis=0)
 
-    if not (boxes1.shape[1] == boxes2.shape[1] == 4): raise ValueError("All boxes must consist of 4 coordinates, but the boxes in `boxes1` and `boxes2` have {} and {} coordinates, respectively.".format(boxes1.shape[1], boxes2.shape[1]))
-    if not mode in {'outer_product', 'element-wise'}: raise ValueError("`mode` must be one of 'outer_product' and 'element-wise', but got '{}'.".format(mode))
+    if not (boxes1.shape[1] == boxes2.shape[1] == 4):
+        raise ValueError(
+            "All boxes must consist of 4 coordinates, but the boxes in `boxes1` and `boxes2` have {} and {} coordinates, respectively."
+            .format(boxes1.shape[1], boxes2.shape[1]))
+    if not mode in {'outer_product', 'element-wise'}:
+        raise ValueError(
+            "`mode` must be one of 'outer_product' and 'element-wise', but got '{}'."
+            .format(mode))
 
     # Convert the coordinates if necessary.
     if coords == 'centroids':
-        boxes1 = convert_coordinates(boxes1, start_index=0, conversion='centroids2corners')
-        boxes2 = convert_coordinates(boxes2, start_index=0, conversion='centroids2corners')
+        boxes1 = convert_coordinates(boxes1,
+                                     start_index=0,
+                                     conversion='centroids2corners')
+        boxes2 = convert_coordinates(boxes2,
+                                     start_index=0,
+                                     conversion='centroids2corners')
         coords = 'corners'
     elif not (coords in {'minmax', 'corners'}):
-        raise ValueError("Unexpected value for `coords`. Supported values are 'minmax', 'corners' and 'centroids'.")
+        raise ValueError(
+            "Unexpected value for `coords`. Supported values are 'minmax', 'corners' and 'centroids'."
+        )
 
     # Compute the IoU.
 
     # Compute the interesection areas.
 
-    intersection_areas = intersection_area_(boxes1, boxes2, coords=coords, mode=mode)
+    intersection_areas = intersection_area_(boxes1,
+                                            boxes2,
+                                            coords=coords,
+                                            mode=mode)
 
-    m = boxes1.shape[0] # The number of boxes in `boxes1`
-    n = boxes2.shape[0] # The number of boxes in `boxes2`
+    m = boxes1.shape[0]  # The number of boxes in `boxes1`
+    n = boxes2.shape[0]  # The number of boxes in `boxes2`
 
     # Compute the union areas.
 
@@ -1274,16 +1495,24 @@ def iou(boxes1, boxes2, coords='centroids', mode='outer_product', border_pixels=
 
     if mode == 'outer_product':
 
-        boxes1_areas = np.tile(np.expand_dims((boxes1[:,xmax] - boxes1[:,xmin] + d) * (boxes1[:,ymax] - boxes1[:,ymin] + d), axis=1), reps=(1,n))
-        boxes2_areas = np.tile(np.expand_dims((boxes2[:,xmax] - boxes2[:,xmin] + d) * (boxes2[:,ymax] - boxes2[:,ymin] + d), axis=0), reps=(m,1))
+        boxes1_areas = np.tile(np.expand_dims(
+            (boxes1[:, xmax] - boxes1[:, xmin] + d) *
+            (boxes1[:, ymax] - boxes1[:, ymin] + d),
+            axis=1),
+                               reps=(1, n))
+        boxes2_areas = np.tile(np.expand_dims(
+            (boxes2[:, xmax] - boxes2[:, xmin] + d) *
+            (boxes2[:, ymax] - boxes2[:, ymin] + d),
+            axis=0),
+                               reps=(m, 1))
 
     elif mode == 'element-wise':
 
-        boxes1_areas = (boxes1[:,xmax] - boxes1[:,xmin] + d) * (boxes1[:,ymax] - boxes1[:,ymin] + d)
-        boxes2_areas = (boxes2[:,xmax] - boxes2[:,xmin] + d) * (boxes2[:,ymax] - boxes2[:,ymin] + d)
+        boxes1_areas = (boxes1[:, xmax] - boxes1[:, xmin] +
+                        d) * (boxes1[:, ymax] - boxes1[:, ymin] + d)
+        boxes2_areas = (boxes2[:, xmax] - boxes2[:, xmin] +
+                        d) * (boxes2[:, ymax] - boxes2[:, ymin] + d)
 
     union_areas = boxes1_areas + boxes2_areas - intersection_areas
 
     return intersection_areas / union_areas
-
-

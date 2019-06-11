@@ -1,9 +1,13 @@
+# -*- coding: utf-8 -*-
 from __future__ import division
 import numpy as np
 import cv2
 import os
 from dataset.dataset import PointCloudDataset
-class_list = ['Car', 'Van', 'Truck', 'Pedestrian', 'Person_sitting', 'Cyclist', 'Tram', 'Misc']
+class_list = [
+    'Car', 'Van', 'Truck', 'Pedestrian', 'Person_sitting', 'Cyclist', 'Tram',
+    'Misc'
+]
 img_h, img_w = 768, 1024
 # dataset
 train_dataset = PointCloudDataset(root='./kitti/', data_set='train')
@@ -15,14 +19,14 @@ def delete_file_folder(src):
         os.remove(src)
     elif os.path.isdir(src):
         for item in os.listdir(src):
-            itemsrc = os.path.join(src, item)
-            delete_file_folder(itemsrc)
+            item_src = os.path.join(src, item)
+            delete_file_folder(item_src)
 
 
 delete_file_folder('train/labels')
 delete_file_folder('test/labels')
 for img_idx, rgb_map, target in train_dataset.getitem():
-    rgb_map = np.array(rgb_map * 255,  np.uint8)
+    rgb_map = np.array(rgb_map * 255, np.uint8)
     target = np.array(target)
     print('process train data： {}'.format(img_idx))
     for i in range(target.shape[0]):
@@ -40,7 +44,7 @@ for img_idx, rgb_map, target in train_dataset.getitem():
     cv2.imwrite('./train/images/{}.png'.format(img_idx), rgb_map[:, :, ::-1])
 
 for img_idx, rgb_map, target in test_dataset.getitem():
-    rgb_map = np.array(rgb_map * 255,  np.uint8)
+    rgb_map = np.array(rgb_map * 255, np.uint8)
     target = np.array(target)
     print('process test data： {}'.format(img_idx))
     for i in range(target.shape[0]):
