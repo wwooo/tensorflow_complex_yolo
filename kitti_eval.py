@@ -81,10 +81,10 @@ def kitti_eval():
         img_for_net = rgb_map / 255.0
         data = sess.run(y, feed_dict={image: [img_for_net], train_flag: False})
         classes, rois = preprocess_data(data, anchors, important_classes)
-        classes, indxs = non_max_supression(classes, rois, prob_th, iou_th)
-        all_boxs = filter_bbox(classes, rois, indxs)
+        classes, index = non_max_supression(classes, rois, prob_th, iou_th)
+        all_boxes = filter_bbox(classes, rois, index)
         with open(result_file, "w") as f:
-            for box in all_boxs:
+            for box in all_boxes:
                 pred_img_y = box[2]
                 pred_img_x = box[1]
                 velo_x, velo_y = coord_image_to_velo(pred_img_y, pred_img_x)

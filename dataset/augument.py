@@ -940,9 +940,9 @@ class CropPad:
                 of an image contains which bounding box coordinate. The dictionary maps at least the keywords
                 'xmin', 'ymin', 'xmax', and 'ymax' to their respective indices within last axis of the labels array.
         """
-        #if (patch_height <= 0) or (patch_width <= 0):
+        #  if (patch_height <= 0) or (patch_width <= 0):
         #    raise ValueError("Patch height and width must both be positive.")
-        #if (patch_ymin + patch_height < 0) or (patch_xmin + patch_width < 0):
+        #  if (patch_ymin + patch_height < 0) or (patch_xmin + patch_width < 0):
         #    raise ValueError("A patch with the given coordinates cannot overlap with an input image.")
         if not (isinstance(box_filter, BoxFilter) or box_filter is None):
             raise ValueError(

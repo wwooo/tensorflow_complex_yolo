@@ -7,7 +7,7 @@ import cv2
 from utils.model_utils import softmax, sigmoid, non_max_supression, filter_bbox
 from utils.kitti_utils import draw_rotated_box, cal_angle, get_corner_gtbox, \
     read_anchors_from_file, read_class_flag
-gtbox_color = (255, 255, 255)
+gt_box_color = (255, 255, 255)
 prob_th = 0.3
 nms_iou_th = 0.4
 n_anchors = 5
@@ -30,8 +30,8 @@ def preprocess_data(data, anchors, important_classes):
         for j in range(grid_w):
             for k in range(n_anchors):
                 class_vec = softmax(data[0, i, j, k, 7:])
-                objectness = sigmoid(data[0, i, j, k, 6])
-                class_prob = objectness * class_vec
+                object_conf = sigmoid(data[0, i, j, k, 6])
+                class_prob = object_conf * class_vec
                 w = np.exp(data[0, i, j, k, 2]
                            ) * anchors[k][0] / 80 * grid_w * net_scale
                 h = np.exp(data[0, i, j, k, 3]
@@ -49,9 +49,9 @@ def preprocess_data(data, anchors, important_classes):
     return classes, locations
 
 
-def predict(draw_gtbox=False):
+def predict(draw_gt_box=False):
 
-    important_classes, names, colors = read_class_flag('config/class_flag.txt')
+    important_classes, names, color = read_class_flag('config/class_flag.txt')
     anchors = read_anchors_from_file('config/kitti_anchors.txt')
     sess = tf.Session()
     saver = tf.train.import_meta_graph(
@@ -69,7 +69,7 @@ def predict(draw_gtbox=False):
         img = np.array(rgb_map * 255, np.uint8)
         target = np.array(target)
         # draw gt bbox
-        if draw_gtbox:
+        if draw_gt_box:
             for i in range(target.shape[0]):
                 if target[i][1] == 0 and target[i][2] == 0:
                     break
@@ -78,28 +78,28 @@ def predict(draw_gtbox=False):
                 w = int(target[i][3] * img_w)
                 h = int(target[i][4] * img_h)
                 rz = target[i][5]
-                draw_rotated_box(img, cx, cy, w, h, rz, gtbox_color)
+                draw_rotated_box(img, cx, cy, w, h, rz, gt_box_color)
                 label = class_list[int(target[i][0])]
                 box = get_corner_gtbox([cx, cy, w, h])
                 cv2.putText(img, label, (box[0], box[1]),
-                            cv2.FONT_HERSHEY_PLAIN, 1.0, gtbox_color, 1)
+                            cv2.FONT_HERSHEY_PLAIN, 1.0, gt_box_color, 1)
         data = sess.run(y, feed_dict={image: [rgb_map], train_flag: False})
         classes, rois = preprocess_data(data, anchors, important_classes)
-        classes, indxs = non_max_supression(classes, rois, prob_th, nms_iou_th)
-        all_bboxs = filter_bbox(classes, rois, indxs)
-        for box in all_bboxs:
+        classes, index = non_max_supression(classes, rois, prob_th, nms_iou_th)
+        all_boxes = filter_bbox(classes, rois, index)
+        for box in all_boxes:
             class_idx = box[0]
             corner_box = get_corner_gtbox(box[1:5])
             angle = cal_angle(box[6], box[5])
             class_prob = box[7]
-            draw_rotated_box(img, box[1], box[2], box[3], box[4], angle,
-                            colors[class_idx])
+            draw_rotated_box(img, box[1], box[2], box[3], box[4], 
+                             angle, color[class_idx])
             cv2.putText(img,
                         class_list[class_idx] + ' : {:.2f}'.format(class_prob),
                         (corner_box[0], corner_box[1]), cv2.FONT_HERSHEY_PLAIN,
-                        0.7, colors[class_idx], 1, cv2.LINE_AA)
+                        0.7, color[class_idx], 1, cv2.LINE_AA)
         cv2.imwrite('./predict_result/{}.png'.format(img_idx), img)
 
 
 if __name__ == '__main__':
-    predict(draw_gtbox=True)
+    predict(draw_gt_box=True)

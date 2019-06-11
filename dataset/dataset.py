@@ -4,7 +4,7 @@ import numpy as np
 import cv2
 import os
 from utils.kitti_utils import read_anchors_from_file, read_label_from_txt, \
-    load_kitti_calib, get_target, removePoints, makeBVFeature
+    load_kitti_calib, get_target, remove_points, make_bv_feature
 from dataset.augument import RandomScaleAugmentation
 from model.model import encode_label
 img_h, img_w = 768, 1024
@@ -47,8 +47,8 @@ class PointCloudDataset(object):
             # load point cloud data
             point_cloud = np.fromfile(lidar_file,
                                       dtype=np.float32).reshape(-1, 4)
-            b = removePoints(point_cloud, boundary)
-            rgb_map = makeBVFeature(b)  # (768, 1024, 3)
+            b = remove_points(point_cloud, boundary)
+            rgb_map = make_bv_feature(b)  # (768, 1024, 3)
 
             yield index, rgb_map, target
 
