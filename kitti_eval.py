@@ -74,8 +74,7 @@ def kitti_eval():
         # test_file_index = test_file_index.strip()
         calib_file = calib_dir + str(test_file_index).zfill(6) + '.txt'
         calib = load_kitti_calib(calib_file)
-        result_file = "./eval_results/" + str(test_file_index).zfill(
-            6) + ".txt"
+        result_file = "./eval_results/" + str(test_file_index).zfill(6) + ".txt"
         img_path = test_image_path + str(test_file_index).zfill(6) + '.png'
         rgb_map = cv2.imread(img_path)[:, :, ::-1]
         img_for_net = rgb_map / 255.0
@@ -88,8 +87,7 @@ def kitti_eval():
                 pred_img_y = box[2]
                 pred_img_x = box[1]
                 velo_x, velo_y = coord_image_to_velo(pred_img_y, pred_img_x)
-                cam_x, cam_z = coord_velo_to_cam(velo_x, velo_y,
-                                                 calib['Tr_velo2cam'])
+                cam_x, cam_z = coord_velo_to_cam(velo_x, velo_y, calib['Tr_velo2cam'])
                 pred_width = box[3] * 80 / 1024.0
                 pred_height = box[4] * 60 / 768.0
                 pred_cls = class_list[box[0]]

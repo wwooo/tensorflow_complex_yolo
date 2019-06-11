@@ -65,8 +65,8 @@ def train(load_weights=False):
     loss_c_sum = tf.summary.scalar("loss_c", loss_c)
     loss_sum = tf.summary.scalar("loss", loss)
     loss_tensorboard_sum = tf.summary.merge([
-        loss_xy_sum, loss_wh_sum, loss_re_sum, loss_im_sum, loss_obj_sum,
-        loss_no_obj_sum, loss_c_sum, loss_sum
+        loss_xy_sum, loss_wh_sum, loss_re_sum, loss_im_sum,
+        loss_obj_sum, loss_no_obj_sum, loss_c_sum, loss_sum
     ])
     opt = tf.train.AdamOptimizer(learning_rate=learning_rate)
     update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
