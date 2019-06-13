@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 from __future__ import division
+import cv2
+import argparse
 import numpy as np
 import tensorflow as tf
 from dataset.dataset import PointCloudDataset
-import cv2
-from utils.model_utils import softmax, sigmoid, non_max_supression, filter_bbox
-from utils.kitti_utils import draw_rotated_box, cal_angle, get_corner_gtbox, \
+from utils.model_utils import preprocess_data, non_max_supression, filter_bbox, make_dir
+from utils.kitti_utils import draw_rotated_box, calculate_angle, get_corner_gtbox, \
     read_anchors_from_file, read_class_flag
 gt_box_color = (255, 255, 255)
 prob_th = 0.3
@@ -16,37 +17,19 @@ net_scale = 32
 img_h, img_w = 768, 1024
 grid_w, grid_h = 32, 24
 class_list = [
-    'Car', 'Van', 'Truck', 'Pedestrian', 'Person_sitting', 'Cyclist', 'Tram',
-    'Misc'
+    'Car', 'Van', 'Truck', 'Pedestrian',
+    'Person_sitting', 'Cyclist', 'Tram', 'Misc'
 ]
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--draw_gt_box", type=str,  default='True', help="Whether to draw_gtbox, True or False")
+parser.add_argument("--weights_path", type=str, default='./weights', help="set the weights_path")
+args = parser.parse_args()
+weights_path = args.weights_path
+
 # dataset
 dataset = PointCloudDataset(root='./kitti/', data_set='test')
-
-
-def preprocess_data(data, anchors, important_classes):
-    locations = []
-    classes = []
-    for i in range(grid_h):
-        for j in range(grid_w):
-            for k in range(n_anchors):
-                class_vec = softmax(data[0, i, j, k, 7:])
-                object_conf = sigmoid(data[0, i, j, k, 6])
-                class_prob = object_conf * class_vec
-                w = np.exp(data[0, i, j, k, 2]
-                           ) * anchors[k][0] / 80 * grid_w * net_scale
-                h = np.exp(data[0, i, j, k, 3]
-                           ) * anchors[k][1] / 60 * grid_h * net_scale
-                dx = sigmoid(data[0, i, j, k, 0])
-                dy = sigmoid(data[0, i, j, k, 1])
-                re = 2 * sigmoid(data[0, i, j, k, 4]) - 1
-                im = 2 * sigmoid(data[0, i, j, k, 5]) - 1
-                y = (i + dy) * net_scale
-                x = (j + dx) * net_scale
-                classes.append(class_prob[important_classes])
-                locations.append([x, y, w, h, re, im])
-    classes = np.array(classes)
-    locations = np.array(locations)
-    return classes, locations
+make_dir('./predict_result')
 
 
 def predict(draw_gt_box=False):
@@ -54,22 +37,18 @@ def predict(draw_gt_box=False):
     important_classes, names, color = read_class_flag('config/class_flag.txt')
     anchors = read_anchors_from_file('config/kitti_anchors.txt')
     sess = tf.Session()
-    saver = tf.train.import_meta_graph(
-        './weights/yolo_tloss_0.17186672985553741_vloss_3.1235308539436524-96000.meta'
-    )
-    saver.restore(
-        sess,
-        './weights/yolo_tloss_0.17186672985553741_vloss_3.1235308539436524-96000'
-    )
+    saver = tf.train.import_meta_graph(weights_path + '.meta')
+    saver.restore(sess, weights_path)
     graph = tf.get_default_graph()
     image = graph.get_tensor_by_name("image_placeholder:0")
     train_flag = graph.get_tensor_by_name("flag_placeholder:0")
     y = graph.get_tensor_by_name("net/y:0")
+    print("predict result saved in ./predict_result/")
     for img_idx, rgb_map, target in dataset.getitem():
         img = np.array(rgb_map * 255, np.uint8)
         target = np.array(target)
         # draw gt bbox
-        if draw_gt_box:
+        if draw_gt_box == 'True':
             for i in range(target.shape[0]):
                 if target[i].sum() == 0:
                     break
@@ -84,15 +63,16 @@ def predict(draw_gt_box=False):
                 cv2.putText(img, label, (box[0], box[1]),
                             cv2.FONT_HERSHEY_PLAIN, 1.0, gt_box_color, 1)
         data = sess.run(y, feed_dict={image: [rgb_map], train_flag: False})
-        classes, rois = preprocess_data(data, anchors, important_classes)
+        classes, rois = preprocess_data(data, anchors, important_classes,
+                                        grid_w, grid_h, net_scale)
         classes, index = non_max_supression(classes, rois, prob_th, nms_iou_th)
         all_boxes = filter_bbox(classes, rois, index)
         for box in all_boxes:
             class_idx = box[0]
             corner_box = get_corner_gtbox(box[1:5])
-            angle = cal_angle(box[6], box[5])
+            angle = calculate_angle(box[6], box[5])
             class_prob = box[7]
-            draw_rotated_box(img, box[1], box[2], box[3], box[4], 
+            draw_rotated_box(img, box[1], box[2], box[3], box[4],
                              angle, color[class_idx])
             cv2.putText(img,
                         class_list[class_idx] + ' : {:.2f}'.format(class_prob),
@@ -102,4 +82,4 @@ def predict(draw_gt_box=False):
 
 
 if __name__ == '__main__':
-    predict(draw_gt_box=True)
+    predict(draw_gt_box=args.draw_gt_box)

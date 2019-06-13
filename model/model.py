@@ -17,11 +17,11 @@ class_dict = {
 }
 
 
-def lrelu(x, leak):
+def leak_relu(x, leak):
     return tf.maximum(x, leak * x, name='relu')
 
 
-def maxpool_layer(x, size, stride, name):
+def max_pool_layer(x, size, stride, name):
     with tf.name_scope(name):
         x = tf.layers.max_pooling2d(x, size, stride, padding='SAME')
     return x
@@ -42,7 +42,7 @@ def conv_layer(x, kernel, depth, train_logical, name):
                                           epsilon=0.001,
                                           center=True,
                                           scale=True)
-        x = lrelu(x, 0.2)
+        x = leak_relu(x, 0.2)
     # x = tf.nn.relu(x)
     return x
 
@@ -55,6 +55,13 @@ def passthrough_layer(a, b, kernel, depth, size, train_logical, name):
 
 
 def slice_tensor(x, start, end=None):
+    """
+    Get tensor slices
+    param x (array):
+    param start (int):
+    param end (int):
+    return (array):
+    """
     if end < 0:
         y = x[..., start:]
     else:
@@ -64,39 +71,66 @@ def slice_tensor(x, start, end=None):
     return y
 
 
-def iou_wh(r1, r2):
-    min_w = min(r1[0], r2[0])
-    min_h = min(r1[1], r2[1])
-    area_r1 = r1[0] * r1[1]
-    area_r2 = r2[0] * r2[1]
+def iou_wh(box1_wh, box2_wh):
+    """
+    param box1_wh (list, tuple): Width and height of a box
+    param box2_wh (list, tuple): Width and height of a box
+    return (float): iou
+    """
+    min_w = min(box1_wh[0], box2_wh[0])
+    min_h = min(box1_wh[1], box2_wh[1])
+    area_r1 = box1_wh[0] * box1_wh[1]
+    area_r2 = box2_wh[0] * box2_wh[1]
     intersect = min_w * min_h
     union = area_r1 + area_r2 - intersect
     return intersect / union
 
 
 def get_grid_cell(roi, img_w, img_h, grid_w, grid_h):  # roi[x, y, w, h, rz]
+    """
+    Get the grid cell into which the object falls
+    param roi : [x, y, w, h, rz]
+    param img_w: The width of images
+    param img_h: The height of images
+    param grid_w: 
+    param grid_h:
+    return (int, int):
+    """
     x_center = roi[0]
     y_center = roi[1]
-    grid_x = np.minimum(int(grid_w * x_center / img_w), 31)
-    grid_y = np.minimum(int(grid_h * y_center / img_h), 23)
+    grid_x = np.minimum(int(grid_w * x_center / img_w), grid_w-1)
+    grid_y = np.minimum(int(grid_h * y_center / img_h), grid_h-1)
     return grid_x, grid_y
 
 
-def get_active_anchors(roi, anchors, iou_th):
-    indxs = []
+def get_active_anchors(box_w_h, anchors, iou_th):
+    """
+    Get the index of the anchor that matches the ground truth box
+    param box_w_h (list, tuple):  Width and height of a box
+    param anchors (array): anchors
+    param iou_th: Match threshold
+    return (list):
+    """
+    index = []
     iou_max, index_max = 0, 0
     for i, a in enumerate(anchors):
-        iou = iou_wh(roi[2:4], a)
+        iou = iou_wh(box_w_h, a)
         if iou > iou_th:
-            indxs.append(i)
+            index.append(i)
         if iou > iou_max:
             iou_max, index_max = iou, i
-    if len(indxs) == 0:
-        indxs.append(index_max)
-    return indxs
+    if len(index) == 0:
+        index.append(index_max)
+    return index
 
 
 def roi2label(roi, anchor, img_w, img_h, grid_w, grid_h):
+    """
+    Encode the label to match the model output format
+    param roi: x, y, w, h, angle
+    
+    return: encoded label 
+    """
     x_center = roi[0]
     y_center = roi[1]
     w = grid_w * roi[2] / img_w
@@ -116,6 +150,12 @@ def roi2label(roi, anchor, img_w, img_h, grid_w, grid_h):
 
 
 def encode_label(labels, anchors, img_w, img_h, grid_w, grid_h, iou_th):
+    """
+    Encode the label to match the model output format
+    param labels (array): x, y, w, h, angle
+    param anchors (array): anchors
+    return: encoded label 
+    """
     anchors_on_image = np.array([img_w, img_h]) * anchors / np.array([80, 60])
     n_anchors = np.shape(anchors_on_image)[0]
     label_encoded = np.zeros([grid_h, grid_w, n_anchors, (6 + 1 + 1)],
@@ -123,12 +163,12 @@ def encode_label(labels, anchors, img_w, img_h, grid_w, grid_h, iou_th):
     for i in range(labels.shape[0]):
         rois = labels[i][1:]
         classes = np.array(labels[i][0], dtype=np.int32)
-        active_indxs = get_active_anchors(rois, anchors_on_image, iou_th)
+        active_indexes = get_active_anchors(rois[2:4], anchors_on_image, iou_th)
         grid_x, grid_y = get_grid_cell(rois, img_w, img_h, grid_w, grid_h)
-        for active_indx in active_indxs:
-            anchor_label = roi2label(rois, anchors_on_image[active_indx],
+        for active_index in active_indexes:
+            anchor_label = roi2label(rois, anchors_on_image[active_index],
                                      img_w, img_h, grid_w, grid_h)
-            label_encoded[grid_y, grid_x, active_indx] = np.concatenate(
+            label_encoded[grid_y, grid_x, active_index] = np.concatenate(
                 (anchor_label, [classes], [1.0]))
     return label_encoded
 
@@ -136,26 +176,26 @@ def encode_label(labels, anchors, img_w, img_h, grid_w, grid_h, iou_th):
 def yolo_net(x, train_logical):
     """darknet"""
     x = conv_layer(x, (3, 3), 24, train_logical, 'conv1')
-    x = maxpool_layer(x, (2, 2), (2, 2), 'maxpool1')
+    x = max_pool_layer(x, (2, 2), (2, 2), 'maxpool1')
     x = conv_layer(x, (3, 3), 48, train_logical, 'conv2')
-    x = maxpool_layer(x, (2, 2), (2, 2), 'maxpool2')
+    x = max_pool_layer(x, (2, 2), (2, 2), 'maxpool2')
 
     x = conv_layer(x, (3, 3), 64, train_logical, 'conv3')
     x = conv_layer(x, (1, 1), 32, train_logical, 'conv4')
     x = conv_layer(x, (3, 3), 64, train_logical, 'conv5')
-    x = maxpool_layer(x, (2, 2), (2, 2), 'maxpool5')
+    x = max_pool_layer(x, (2, 2), (2, 2), 'maxpool5')
 
     x = conv_layer(x, (3, 3), 128, train_logical, 'conv6')
     x = conv_layer(x, (1, 1), 64, train_logical, 'conv7')
     x = conv_layer(x, (3, 3), 128, train_logical, 'conv8')
-    x = maxpool_layer(x, (2, 2), (2, 2), 'maxpool8')
+    x = max_pool_layer(x, (2, 2), (2, 2), 'maxpool8')
 
     # x = conv_layer(x, (3, 3), 512, train_logical, 'conv9')
     # x = conv_layer(x, (1, 1), 256, train_logical, 'conv10')
     x = conv_layer(x, (3, 3), 512, train_logical, 'conv11')
     x = conv_layer(x, (1, 1), 256, train_logical, 'conv12')
     passthrough = conv_layer(x, (3, 3), 512, train_logical, 'conv13')
-    x = maxpool_layer(passthrough, (2, 2), (2, 2), 'maxpool13')
+    x = max_pool_layer(passthrough, (2, 2), (2, 2), 'maxpool13')
 
     # x = conv_layer(x, (3, 3), 1024, train_logical, 'conv14')
     # x = conv_layer(x, (1, 1), 512, train_logical, 'conv15')
@@ -191,7 +231,7 @@ def yolo_loss(pred, label, batch_size):
         masked_pred_o = tf.sigmoid(slice_tensor(masked_pred, 6, 6))
 
         masked_pred_no_o = tf.sigmoid(slice_tensor(neg_masked_pred, 6, 6))
-        #masked_pred_c = tf.nn.sigmoid(slice_tensor(masked_pred, 7, -1))
+        # masked_pred_c = tf.nn.sigmoid(slice_tensor(masked_pred, 7, -1))
         masked_pred_c = tf.nn.softmax(slice_tensor(masked_pred, 7, -1))
     # masked_pred_no_c = tf.nn.sigmoid(slice_tensor(neg_masked_pred, 7, -1))
     # print (masked_pred_c, masked_pred_o, masked_pred_no_o)
@@ -204,8 +244,8 @@ def yolo_loss(pred, label, batch_size):
         masked_label_class = slice_tensor(masked_label, 6, 6)
         masked_label_class_vec = tf.reshape(tf.one_hot(tf.cast(
             masked_label_class, tf.int32),
-                                                       depth=N_CLASSES),
-                                            shape=(-1, N_CLASSES))
+            depth=N_CLASSES),
+            shape=(-1, N_CLASSES))
     with tf.name_scope('merge'):
         with tf.name_scope('loss_xy'):
             loss_xy = tf.reduce_sum(
@@ -228,8 +268,8 @@ def yolo_loss(pred, label, batch_size):
         # loss_no_obj =  tf.reduce_sum(-tf.log(1-masked_pred_no_o+0.000001))
         with tf.name_scope('loss_class'):
             # loss_c = tf.reduce_sum(tf.square(masked_pred_c - masked_label_c_vec))
-            loss_c = (tf.reduce_sum(-tf.log(masked_pred_c + 0.000001) * masked_label_class_vec) \
-                     + tf.reduce_sum(-tf.log(1 - masked_pred_c + 0.000001) * (1 - masked_label_class_vec))) / batch_size
+            loss_c = (tf.reduce_sum(-tf.log(masked_pred_c + 0.000001) * masked_label_class_vec)
+                      + tf.reduce_sum(-tf.log(1 - masked_pred_c + 0.000001) * (1 - masked_label_class_vec))) / batch_size
             # + tf.reduce_sum(-tf.log(1 - masked_pred_no_c+0.000001)) * 0.1
     # loss = (loss_xy + loss_wh+ loss_re + loss_im+ lambda_coord*loss_obj) + lambda_no_obj*loss_no_obj + loss_c
     loss = (loss_xy + loss_wh + loss_re +

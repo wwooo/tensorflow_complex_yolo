@@ -104,8 +104,8 @@ class ImageDataSet(object):
 
     def label_box_center_to_corner(self, label):
         """
-        :param label: class, cx, cy, w, l, angle
-        :return: class, x_min, y_min, x_max, y_max, angle
+        param label: class, cx, cy, w, l, angle
+        return: class, x_min, y_min, x_max, y_max, angle
         """
         label_ = np.copy(label)
         cx = label_[:, 1]
@@ -120,8 +120,8 @@ class ImageDataSet(object):
 
     def label_box_corner_to_center(self, label):
         """
-        :param label: class, x_min, y_min, x_max, y_max, angle
-        :return:  class, cx, cy, w, l, angle
+        param label: class, x_min, y_min, x_max, y_max, angle
+        return:  class, cx, cy, w, l, angle
         """
         cx = (label[:, 1] + label[:, 3]) / 2.0
         cy = (label[:, 2] + label[:, 4]) / 2.0
@@ -219,6 +219,11 @@ class ImageDataSet(object):
                             yield self.img_index, self.img, self.label
 
     def get_batch(self, batch_size):
+        """
+        Generate a batch of data for model training
+        param batch_size (int):
+
+        """
         img_batch = []
         label_batch = []
         i = 0
@@ -232,6 +237,3 @@ class ImageDataSet(object):
                 img_batch = []
                 label_batch = []
 
-    # def pre_get_batch(self, batch_size):
-    #     data_batch = BackgroundGenerator(self.get_batch(batch_size), 10)
-    #     yield data_batch

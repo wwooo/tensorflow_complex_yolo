@@ -66,11 +66,11 @@ def read_class_flag(file_path):
     return classes, names, colors
 
 
-def cal_angle(im, re):
+def calculate_angle(im, re):
     """
-    :param im: imaginary parts of the plural
-    :param re: real parts of the plural
-    :return: The angle at which the objects rotate
+    param: im(float): imaginary parts of the plural
+    param: re(float): real parts of the plural
+    return: The angle at which the objects rotate
     around the Z axis in the velodyne coordinate system
     """
     if re > 0:
@@ -83,13 +83,13 @@ def cal_angle(im, re):
 
 def draw_rotated_box(img, cy, cx, w, h, angle, color):
     """
-    :param img: RGB image
-    :param cy:  Here cy is cx in the image coordinate system
-    :param cx:  Here cx is cy in the image coordinate system
-    :param w:   box's width
-    :param h:   box's height
-    :param angle: rz
-    :param color: the color of box, (R, G, B)
+    param: img(array): RGB image
+    param: cy(int, float):  Here cy is cx in the image coordinate system
+    param: cx(int, float):  Here cx is cy in the image coordinate system
+    param: w(int, float):   box's width
+    param: h(int, float):   box's height
+    param: angle(float): rz
+    param: color(tuple, list): the color of box, (R, G, B)
     """
     left = int(cy - w / 2)
     top = int(cx - h / 2)
@@ -123,8 +123,8 @@ def draw_rotated_box(img, cy, cx, w, h, angle, color):
 
 def get_corner_gtbox(box):
     """
-    :param box: cx, cy, w, l
-    :return: x_min, y_min, x_max, y_max
+    param: box(tuple, list): cx, cy, w, l
+    return: (tuple): x_min, y_min, x_max, y_max
     """
     bx = box[0]
     by = box[1]
@@ -138,6 +138,11 @@ def get_corner_gtbox(box):
 
 
 def remove_points(point_cloud, boundary_condition):
+    """
+    param point_cloud(array): Original point cloud data
+    param boundary_condition(dict): The boundary of the area of interest
+    return (array): Point cloud data within the area of interest
+    """
     # Boundary condition
     min_x = boundary_condition['minX']
     max_x = boundary_condition['maxX']
@@ -155,6 +160,10 @@ def remove_points(point_cloud, boundary_condition):
 
 
 def make_bv_feature(point_cloud_):
+    """
+    param point_cloud_ (array): Point cloud data within the area of interest
+    return (array): RGB map
+    """
     # 1024 x 1024 x 3
     Height = 1024 + 1
     Width = 1024 + 1
@@ -199,6 +208,12 @@ def make_bv_feature(point_cloud_):
 
 
 def get_target(label_file, transform):
+    """
+
+    param label_file  (str): The kitti label path
+    param transform (array): Coordinate transformation matrix
+    return (array): label
+    """
     target = np.zeros([50, 6], dtype=np.float32)
     with open(label_file, 'r') as f:
         lines = f.readlines()
@@ -240,8 +255,8 @@ def box3d_cam_to_velo(box3d, transform):
 
     def ry_to_rz(ry):
         """
-        :param ry: yaw angle in cam coordinate system
-        :return: yaw angle in velodyne coordinate system
+        param ry (float): yaw angle in cam coordinate system
+        return: (flaot): yaw angle in velodyne coordinate system
         """
         angle = -ry - np.pi / 2
         if angle >= np.pi:
@@ -302,8 +317,8 @@ def load_kitti_calib(calib_file):
 
 def angle_rz_to_ry(rz):
     """
-    :param rz: yaw angle in velodyne coordinate system
-    :return: yaw angle in cam coordinate system
+    param rz (float): yaw angle in velodyne coordinate system
+    return (float): yaw angle in cam coordinate system
     """
     angle = -rz - np.pi / 2
     if angle < -np.pi:

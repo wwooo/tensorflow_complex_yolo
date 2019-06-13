@@ -1,21 +1,34 @@
 # -*- coding: utf-8 -*-
 from __future__ import division
 import os
+import argparse
 import tensorflow as tf
+from utils.model_utils import make_dir
 from dataset.dataset import ImageDataSet
 from model.model import yolo_net, yolo_loss
-# os.environ["CUDA_VISIBLE_DEVICES"] = "2"
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--load_weights", type=str, default='False', help="Whether to load weights, True or False")
+parser.add_argument("--batch_size", type=int, default=8, help="Set the batch_size")
+parser.add_argument("--weights_path", type=str, default="./weights", help="Set the weights_path")
+parser.add_argument("--gpu_id", type=str, default='0', help="Specify GPU device")
+args = parser.parse_args()
+os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu_id
+weights_path = args.weights_path
 
 SCALE = 32
 GRID_W, GRID_H = 32, 24
 N_CLASSES = 8
 N_ANCHORS = 5
 IMAGE_HEIGHT, IMAGE_WIDTH, IMAGE_DEPTH = GRID_H * SCALE, GRID_W * SCALE, 3
-BATCH_SIZE = 2
+BATCH_SIZE = args.batch_size
 NUM_ITER = 150000
 NUM_VAL_SAMPLES = 1000.0
 NUM_VAL_STEP = int(NUM_VAL_SAMPLES / BATCH_SIZE)
-MODEL_PATH, SAVE_INTERVAL = './weights', 1600
+SAVE_DIR, SAVE_INTERVAL = './weights', 1600
+
+
 train_dataset = ImageDataSet(data_set='train',
                              mode='train',
                              load_to_memory=False)
@@ -25,11 +38,6 @@ test_dataset = ImageDataSet(data_set='test',
                             aug_hsv=False,
                             random_scale=False,
                             load_to_memory=False)
-
-
-def make_dir(directory):
-    if not os.path.exists(directory):
-        os.makedirs(directory)
 
 
 def train(load_weights=False):
@@ -77,14 +85,10 @@ def train(load_weights=False):
     saver = tf.train.Saver()
     writer = tf.summary.FileWriter("./logs", sess.graph)
 
-    if load_weights:
-        saver = tf.train.import_meta_graph(
-            './weights/yolo_tloss_4.664687156677246_vloss_5.552119486808777-60000.meta'
-        )
-        saver.restore(
-            sess,
-            './weights/yolo_tloss_4.664687156677246_vloss_5.552119486808777-60000'
-        )
+    if load_weights == 'True':
+        print("load weights from {}".format(args.weights_path))
+        saver = tf.train.import_meta_graph(weights_path + '.meta')
+        saver.restore(sess, weights_path)
         print('load weights done!')
 
     for step, (train_image_data, train_label_data) in enumerate(
@@ -113,25 +117,25 @@ def train(load_weights=False):
                 if val_step + 1 == NUM_VAL_STEP:
                     break
             val_loss /= NUM_VAL_STEP
-            print("iter: {} val_loss: {:.4f}".format(step, val_loss))
+            print("iter: {} val_loss: {:.2f}".format(step, val_loss))
             if val_loss < max_val_loss:
-                make_dir(MODEL_PATH)
+                make_dir(SAVE_DIR)
                 saver.save(sess,
                            os.path.join(
-                               MODEL_PATH,
-                               'yolo_train_loss_{:.4f}_val_loss_{:.4f}'.format(
+                               SAVE_DIR,
+                               'yolo_train_loss_{:.2f}_val_loss_{:.2f}'.format(
                                    train_loss, val_loss)),
                            global_step=global_step)
                 max_val_loss = val_loss
         if step + 1 == NUM_ITER:
             saver.save(sess,
                        os.path.join(
-                           MODEL_PATH,
-                           'yolo_final_train_loss_{:.4f}'.format(
+                           SAVE_DIR,
+                           'yolo_final_train_loss_{:.2f}'.format(
                                train_loss)),
                        global_step=global_step)
             break
 
 
 if __name__ == "__main__":
-    train(load_weights=False)
+    train(load_weights=args.load_weights)

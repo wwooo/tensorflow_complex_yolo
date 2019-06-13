@@ -80,7 +80,7 @@ Then create  RGB-image data set：
 
 5 . run python make_image_dataset.py
 
- Note：This model only predicts the area of 60x80 in front of the car, and encodes the point cloud in this area into a 768 x1024 RGB-map. In the kitti data set, not all samples have objects in this area. Therefore, in the process of making an image dataset, the script will automatically filter out  samples of that doesn't  have objects  in the aera.
+ Note：This model only predicts the area of 60x80 in front of the car, and encodes the point cloud in this area into a 768 x1024 RGB-map. In the kitti data set, not all samples have objects in this area. Therefore, in the process of making an image dataset, the script will automatically filter out  samples of that doesn't  have objects  in the area.
       
 6 . run python make_train_test.py  will generate test_image_list.txt  and train_image_list.txt in the config folder.  This step is optional, the two  files already exist in config folder.
                         
@@ -88,11 +88,11 @@ How to train a model:
 
 1 .  Adjust the training parameters in train.py according to the actual  situation.
 
-2 .   run python train.py
+2 .   run python train.py --load_weights  --batch_size --weights_path. If you set --load_weights=True , you must provide the weights_path.You should study the official evaluation script of kitti.
 
 How to predict:
 
-1 . run python predict.py
+1 . run python predict.py --weights_path = ./weights/...
 
 When running predict.py , directly use point cloud data as input to the model, and the script saves the predicted result in the predict_result folder.
 

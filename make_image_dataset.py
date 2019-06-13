@@ -23,41 +23,34 @@ def delete_file_folder(src):
             delete_file_folder(item_src)
 
 
-delete_file_folder('train/labels')
-delete_file_folder('test/labels')
-for img_idx, rgb_map, target in train_dataset.getitem():
-    rgb_map = np.array(rgb_map * 255, np.uint8)
-    target = np.array(target)
-    print('process train data： {}'.format(img_idx))
-    for i in range(target.shape[0]):
-        if target[i].sum() == 0:
-            break
-        with open("./train/labels/{}.txt".format(img_idx), 'a+') as f:
-            label = class_list[int(target[i][0])]
-            cx = target[i][1] * img_w
-            cy = target[i][2] * img_h
-            w = target[i][3] * img_w
-            h = target[i][4] * img_h
-            rz = target[i][5]
-            line = label + ' ' + '{} {} {} {} {}\n'.format(cx, cy, w, h, rz)
-            f.write(line)
-    cv2.imwrite('./train/images/{}.png'.format(img_idx), rgb_map[:, :, ::-1])
+def preprocess_dataset(data_type, dataset):
+    """
+    param: data_type (str) : 'train' or 'test',
+    param: dataset: (PointCloudDataset)
+    return: None
+    """
+    for img_idx, rgb_map, target in dataset.getitem():
+        rgb_map = np.array(rgb_map * 255, np.uint8)
+        target = np.array(target)
+        print('process {} data： {}'.format(data_type, img_idx))
+        for i in range(target.shape[0]):
+            if target[i].sum() == 0:
+                break
+            with open("./{}/labels/{}.txt".format(data_type, img_idx), 'a+') as f:
+                label = class_list[int(target[i][0])]
+                cx = target[i][1] * img_w
+                cy = target[i][2] * img_h
+                w = target[i][3] * img_w
+                h = target[i][4] * img_h
+                rz = target[i][5]
+                line = label + ' ' + '{} {} {} {} {}\n'.format(cx, cy, w, h, rz)
+                f.write(line)
+        cv2.imwrite('./{}/images/{}.png'.format(data_type, img_idx), rgb_map[:, :, ::-1])
+    print('make {} dataset done！'.format(data_type))
 
-for img_idx, rgb_map, target in test_dataset.getitem():
-    rgb_map = np.array(rgb_map * 255, np.uint8)
-    target = np.array(target)
-    print('process test data： {}'.format(img_idx))
-    for i in range(target.shape[0]):
-        if target[i].sum() == 0:
-            break
-        with open("./test/labels/{}.txt".format(img_idx), 'a+') as f:
-            label = class_list[int(target[i][0])]
-            cx = target[i][1] * img_w
-            cy = target[i][2] * img_h
-            w = target[i][3] * img_w
-            h = target[i][4] * img_h
-            rz = target[i][5]
-            line = label + ' ' + '{} {} {} {} {}\n'.format(cx, cy, w, h, rz)
-            f.write(line)
-    cv2.imwrite('./test/images/{}.png'.format(img_idx), rgb_map[:, :, ::-1])
-print('make image dataset done！')
+
+if __name__ == "__main__":
+    delete_file_folder('train/labels')
+    delete_file_folder('test/labels')
+    preprocess_dataset('train', train_dataset)
+    preprocess_dataset('test', test_dataset)

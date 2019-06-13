@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import cv2
+import os
 from dataset.dataset import ImageDataSet
 from utils.kitti_utils import draw_rotated_box, get_corner_gtbox
 img_h, img_w = 768, 1024
@@ -13,6 +14,15 @@ dataset = ImageDataSet(data_set='test',
                        flip=True,
                        random_scale=True,
                        load_to_memory=False)
+
+
+def make_dir(directory):
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+
+
+make_dir('./tmp')
+
 for img_idx, img, target in dataset.data_generator():
     # draw gt bbox
     for i in range(target.shape[0]):

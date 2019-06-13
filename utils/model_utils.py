@@ -1,4 +1,10 @@
 import numpy as np
+import os
+
+
+def make_dir(directory):
+    if not os.path.exists(directory):
+        os.makedirs(directory)
 
 
 def bbox_iou(box1, box2, x1y1x2y2=True):
@@ -95,3 +101,31 @@ def filter_bbox(classes, rois, indxs):
                 im = rois[indxs[class_idx][loc_idx]][5]
                 all_bboxs.append([class_idx, x, y, w, h, re, im, class_prob])
     return all_bboxs
+
+
+def preprocess_data(data, anchors, important_classes, grid_w, grid_h, net_scale):
+    locations = []
+    classes = []
+    n_anchors = np.shape(anchors)[0]
+    for i in range(grid_h):
+        for j in range(grid_w):
+            for k in range(n_anchors):
+                class_vec = softmax(data[0, i, j, k, 7:])
+                object_conf = sigmoid(data[0, i, j, k, 6])
+                class_prob = object_conf * class_vec
+                w = np.exp(data[0, i, j, k, 2]
+                           ) * anchors[k][0] / 80 * grid_w * net_scale
+                h = np.exp(data[0, i, j, k, 3]
+                           ) * anchors[k][1] / 60 * grid_h * net_scale
+                dx = sigmoid(data[0, i, j, k, 0])
+                dy = sigmoid(data[0, i, j, k, 1])
+                re = 2 * sigmoid(data[0, i, j, k, 4]) - 1
+                im = 2 * sigmoid(data[0, i, j, k, 5]) - 1
+                y = (i + dy) * net_scale
+                x = (j + dx) * net_scale
+                classes.append(class_prob[important_classes])
+                locations.append([x, y, w, h, re, im])
+    classes = np.array(classes)
+    locations = np.array(locations)
+    return classes, locations
+
