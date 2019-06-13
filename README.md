@@ -88,7 +88,7 @@ How to train a model:
 
 1 .  Adjust the training parameters in train.py according to the actual  situation.
 
-2 .   run python train.py --load_weights  --batch_size --weights_path. If you set --load_weights=True , you must provide the weights_path.You should study the official evaluation script of kitti.
+2 .   run python train.py --load_weights  --batch_size --weights_path --gpu_id. If you want to load model weights,you should set --load_weights=True , and provide the weights_path.
 
 How to predict:
 
@@ -100,7 +100,7 @@ How to eval:
 
 run python kitti_eval.py
 
-This script will save the prediction results consistent with the kitti label format. Then use kitti's official evaluation script to evaluate.
+This script will save the prediction results consistent with the kitti label format. Then use kitti's official evaluation script to evaluate. You should study the official evaluation script of kitti.
 
 ### Others
 
