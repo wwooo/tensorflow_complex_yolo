@@ -1,4 +1,15 @@
 # -*- coding: utf-8 -*-
+"""
+This script is mainly used to generate the prediction result
+of each RGB-map of the test set, convert the bounding box coordinates
+in the image to the lidar coordinate system, and then convert the
+coordinates to the camera coordinate system using the coordinate
+transformation matrix provided by the kitti data set.
+The coordinate transformation requires (x, y, z), since the complex-yolo
+does not predict the height of the objects, the height is set to a fixed value
+of 1.5, which does not affect the bird's eye view benchmark evaluation.
+
+"""
 from __future__ import division
 import numpy as np
 import argparse
@@ -27,7 +38,6 @@ kitti_static_cylist = 'cyclist_detection_ground.txt'
 kitti_static_car = 'car_detection_ground.txt'
 kitti_static_pedestrian = 'pedestrian_detection_ground.txt'
 parser = argparse.ArgumentParser()
-parser.add_argument("--draw_gt_box", type=str,  default='True', help="Whether to draw_gtbox, True or False")
 parser.add_argument("--weights_path", type=str, default='./weights', help="set the weights_path")
 args = parser.parse_args()
 weights_path = args.weights_path

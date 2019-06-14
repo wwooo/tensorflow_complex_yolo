@@ -25,6 +25,8 @@ def delete_file_folder(src):
 
 def preprocess_dataset(data_type, dataset):
     """
+    Convert point cloud data to image  while
+    filtering out image without objects.
     param: data_type (str) : 'train' or 'test',
     param: dataset: (PointCloudDataset)
     return: None

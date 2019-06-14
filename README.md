@@ -49,6 +49,11 @@ How to prepare data:
  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-test.txt
 
  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- train.txt
+ 
+The test.txt and train.txt store the test and train sample index<br>
+test :	000000-000999<br>
+train: 	001000-007480<br>
+Can replace it by yourself.
                          
  3 . Unzip the downloaded kitti dataset and get the following data. Place the data in the corresponding folder created above.
          
@@ -57,10 +62,6 @@ data_object_velodyne/training/\*.bin&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\*.bin -
 data_object_label_2/training/label_2/\*.txt &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\*.txt -> label_２
 
 data_object_calib/training/calib/\*.txt&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\*.txt -> calib
-
-The test.txt and train.txt store the test and train sample index<br>
-test :	000000-000999<br>
-train: 	001000-007480<br>
  
 Then create  RGB-image data set：
  
@@ -78,7 +79,7 @@ Then create  RGB-image data set：
 
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-labels/
 
-5 . run python make_image_dataset.py
+5 . run python make\_image_dataset.py
 
  Note：This model only predicts the area of 60x80 in front of the car, and encodes the point cloud in this area into a 768 x1024 RGB-map. In the kitti data set, not all samples have objects in this area. Therefore, in the process of making an image dataset, the script will automatically filter out  samples of that doesn't  have objects  in the area.
       
@@ -88,13 +89,14 @@ How to train a model:
 
 1 .  Adjust the training parameters in train.py according to the actual  situation.
 
-2 .   run python train.py --load_weights  --batch_size --weights_path --gpu_id. If you want to load model weights,you should set --load_weights=True , and provide the weights_path.
+2 .   run python train.py <br>--load\_weights <br> --batch\_size<br> --weights\_path<br> --gpu\_id. <br> If you want to load model weights,you should set --load\_weights=True , and provide the weights\_path. Set  --gpu_id to specify which card to use for training, default is 0.
 
 How to predict:
 
-1 . run python predict.py --weights_path = ./weights/...
+1 . run python predict.py <br>--weights\_path = ./weights/...<br>
+--draw_gt_box
 
-When running predict.py , directly use point cloud data as input to the model, and the script saves the predicted result in the predict_result folder.
+When running predict.py , directly use point cloud data as input to the model, and the script saves  predicted result in the predict\_result folder. You can set draw\_gt_box = True or False to decide whether to draw the ground truth box on  predicted result.
 
 How to eval:
 
