@@ -63,6 +63,9 @@ def sigmoid(x):
 
 
 def non_max_supression(classes, locations, prob_th, iou_th):
+    """
+    Filter out some overlapping boxes by non-maximum suppression
+    """
     classes = np.transpose(classes)
     indxs = np.argsort(-classes, axis=1)
 
@@ -89,6 +92,9 @@ def non_max_supression(classes, locations, prob_th, iou_th):
 
 
 def filter_bbox(classes, rois, indxs):
+    """
+    Pick out bounding boxes that are retained after non-maximum suppression
+    """
     all_bboxs = []
     for class_idx, c in enumerate(classes):
         for loc_idx, class_prob in enumerate(c):
@@ -104,6 +110,12 @@ def filter_bbox(classes, rois, indxs):
 
 
 def preprocess_data(data, anchors, important_classes, grid_w, grid_h, net_scale):
+    """
+    Decode the data output by the model, obtain the center coordinates
+    x, y and width and height of the bounding box in the image,
+    and the category, the real and imaginary parts of the complex.
+
+    """
     locations = []
     classes = []
     n_anchors = np.shape(anchors)[0]

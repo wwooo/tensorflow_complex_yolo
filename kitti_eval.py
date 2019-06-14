@@ -15,7 +15,7 @@ import numpy as np
 import argparse
 import tensorflow as tf
 import cv2
-from utils.model_utils import preprocess_data, non_max_supression, filter_bbox
+from utils.model_utils import preprocess_data, non_max_supression, filter_bbox, make_dir
 from utils.kitti_utils import load_kitti_calib, calculate_angle,\
      read_anchors_from_file, read_class_flag
 from utils.kitti_utils import angle_rz_to_ry, coord_image_to_velo, coord_velo_to_cam
@@ -34,13 +34,17 @@ class_list = [
 train_list = 'config/train_image_list.txt'
 test_list = 'config/test_image_list.txt'
 calib_dir = './kitti/training/calib/'
-kitti_static_cylist = 'cyclist_detection_ground.txt'
-kitti_static_car = 'car_detection_ground.txt'
-kitti_static_pedestrian = 'pedestrian_detection_ground.txt'
+
+# kitti_static_cylist = 'cyclist_detection_ground.txt'
+# kitti_static_car = 'car_detection_ground.txt'
+# kitti_static_pedestrian = 'pedestrian_detection_ground.txt'
+
 parser = argparse.ArgumentParser()
 parser.add_argument("--weights_path", type=str, default='./weights', help="set the weights_path")
 args = parser.parse_args()
 weights_path = args.weights_path
+
+make_dir("./eval_results")
 
 
 def kitti_eval():
@@ -86,16 +90,20 @@ def kitti_eval():
                 pred_conf = box[7]
                 angle_rz = calculate_angle(box[6], box[5])
                 angle_ry = angle_rz_to_ry(angle_rz)
-                pre_line = pred_cls + " " + "-1" + " " + "-1" + " " + "-10" + " " + \
-                           "{:.2f} {:.2f} {:.2f} {:.2f}".format(-1, -1, -1, -1) + " " + \
-                           "-1" + " " + "{:.2f}".format(pred_width) + " " + "{:.2f}".format(pred_height) + \
-                           " " + "{:.2f} {:.2f} {:.2f}".format(cam_x, -1000, cam_z) + " " + "{:.2f}".format(angle_ry) +\
-                           " " + "{:.2f}".format(pred_conf)
-                f.write(pre_line)
+                pred_line = pred_cls + " -1 -1 -10 -1 -1 -1 -1 -1" + \
+                    " {.2f} {.2f}".format(pred_width, pred_height) + \
+                    " {:.2f} {:.2f} {:.2f}".format(cam_x, -1000, cam_z) + \
+                    " {:.2f} {:.2f}".format(angle_ry, pred_conf)
+                f.write(pred_line)
                 f.write("\n")
 
 
 def cal_ap(kitti_statics_results):
+    """
+    Calculate the ap  approximately.
+    param kitti_statics_results(str): Kitti evaluation script output statistics result file.
+    return:
+    """
     with open(kitti_statics_results, 'r') as f:
         lines = f.readlines()
         all_lines = []
