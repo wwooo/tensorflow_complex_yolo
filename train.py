@@ -33,7 +33,7 @@ train_dataset = ImageDataSet(data_set='train',
                              mode='train',
                              load_to_memory=False)
 test_dataset = ImageDataSet(data_set='test',
-                            mode='train',
+                            mode='test',
                             flip=False,
                             aug_hsv=False,
                             random_scale=False,

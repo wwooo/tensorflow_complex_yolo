@@ -4,9 +4,11 @@ import numpy as np
 import cv2
 import os
 from dataset.dataset import PointCloudDataset
+from utils.model_utils import make_dir
+image_dataset_dir = './kitti/image_dataset/'
 class_list = [
-    'Car', 'Van', 'Truck', 'Pedestrian', 'Person_sitting', 'Cyclist', 'Tram',
-    'Misc'
+    'Car', 'Van', 'Truck', 'Pedestrian',
+    'Person_sitting', 'Cyclist', 'Tram', 'Misc'
 ]
 img_h, img_w = 768, 1024
 # dataset
@@ -23,22 +25,21 @@ def delete_file_folder(src):
             delete_file_folder(item_src)
 
 
-def preprocess_dataset(data_type, dataset):
+def preprocess_dataset(dataset):
     """
     Convert point cloud data to image  while
     filtering out image without objects.
-    param: data_type (str) : 'train' or 'test',
     param: dataset: (PointCloudDataset)
     return: None
     """
     for img_idx, rgb_map, target in dataset.getitem():
         rgb_map = np.array(rgb_map * 255, np.uint8)
         target = np.array(target)
-        print('process {} data： {}'.format(data_type, img_idx))
+        print('process image： {}'.format(img_idx))
         for i in range(target.shape[0]):
             if target[i].sum() == 0:
                 break
-            with open("./{}/labels/{}.txt".format(data_type, img_idx), 'a+') as f:
+            with open("./kitti/image_dataset/labels/{}.txt".format(img_idx), 'a+') as f:
                 label = class_list[int(target[i][0])]
                 cx = target[i][1] * img_w
                 cy = target[i][2] * img_h
@@ -47,12 +48,27 @@ def preprocess_dataset(data_type, dataset):
                 rz = target[i][5]
                 line = label + ' ' + '{} {} {} {} {}\n'.format(cx, cy, w, h, rz)
                 f.write(line)
-        cv2.imwrite('./{}/images/{}.png'.format(data_type, img_idx), rgb_map[:, :, ::-1])
-    print('make {} dataset done！'.format(data_type))
+        cv2.imwrite('./kitti/image_dataset/images/{}.png'.format(img_idx), rgb_map[:, :, ::-1])
+    print('make image dataset done！')
+
+
+def make_train_test_list():
+    name_list = os.listdir(image_dataset_dir + 'labels')
+    with open('./config/test_image_list.txt', 'w') as f:
+        for name in name_list[0:1000]:
+            f.write(name.split('.')[0])
+            f.write('\n')
+    with open('./config/train_image_list.txt', 'w') as f:
+        for name in name_list[1000:]:
+            f.write(name.split('.')[0])
+            f.write('\n')
 
 
 if __name__ == "__main__":
-    delete_file_folder('train/labels')
-    delete_file_folder('test/labels')
-    preprocess_dataset('train', train_dataset)
-    preprocess_dataset('test', test_dataset)
+    make_dir(image_dataset_dir + 'images')
+    make_dir(image_dataset_dir + 'labels')
+    delete_file_folder(image_dataset_dir + 'labels')
+    preprocess_dataset(train_dataset)
+    preprocess_dataset(test_dataset)
+    make_train_test_list()
+

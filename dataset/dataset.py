@@ -26,19 +26,18 @@ class PointCloudDataset(object):
                  data_set='train'):
         self.root = root
         self.data_path = os.path.join(root, 'training')
-        self.lidar_path = os.path.join(self.data_path, "velodyne/")
-        self.calib_path = os.path.join(self.data_path, "calib/")
-        self.label_path = os.path.join(self.data_path, "label_2/")
-        # self.image_path = os.path.join(self.data_path, "image_2/")
-
-        with open(os.path.join(self.data_path, '%s.txt' % data_set)) as f:
-            self.index_list = f.read().splitlines()
+        self.lidar_path = os.path.join(self.data_path, "velodyne")
+        self.calib_path = os.path.join(self.data_path, "calib")
+        self.label_path = os.path.join(self.data_path, "label_2")
+        self.index_list = [str(i) for i in range(1000)] if data_set == "test" \
+            else [str(i) for i in range(1000, 7481)]
 
     def getitem(self):
         """
         Encode single-frame point cloud data into RGB-map and get the label
         """
         for index in self.index_list:
+            index = index.zfill(6)
             lidar_file = self.lidar_path + '/' + index + '.bin'
             calib_file = self.calib_path + '/' + index + '.txt'
             label_file = self.label_path + '/' + index + '.txt'
@@ -70,8 +69,8 @@ class ImageDataSet(object):
         self.aug_hsv = aug_hsv
         self.random_scale = random_scale
         self.anchors_path = 'config/kitti_anchors.txt'
-        self.labels_dir = data_set + '/' + 'labels/'
-        self.images_dir = data_set + '/' + 'images/'
+        self.labels_dir = 'kitti/image_dataset/labels/'
+        self.images_dir = 'kitti/image_dataset/images/'
         self.all_image_index = 'config/' + data_set + '_image_list.txt'
         self.load_to_memory = load_to_memory
         self.anchors = read_anchors_from_file(self.anchors_path)
@@ -177,10 +176,10 @@ class ImageDataSet(object):
                         self.label_encoded = encode_label(
                             self.label, self.anchors, img_w, img_h, grid_w,
                             grid_h, iou_th)
-                        if self.mode == 'train':  # Generate data for training
-                            yield self.img_index, self.img / 255.0, self.label_encoded
-                        if self.mode == 'infer':  # Generate data for visualization
+                        if self.mode == 'visualize':  # Generate data for visualization
                             yield self.img_index, self.img, self.label
+                        else:
+                            yield self.img_index, self.img / 255.0, self.label_encoded  # Generate data for net
 
             else:
                 while True:
@@ -213,10 +212,10 @@ class ImageDataSet(object):
                         self.label_encoded = encode_label(
                             self.label, self.anchors, img_w, img_h, grid_w,
                             grid_h, iou_th)
-                        if self.mode == 'train':
-                            yield self.img_index, self.img / 255.0, self.label_encoded
-                        if self.mode == 'infer':
+                        if self.mode == 'visualize':  # Generate data for visualization
                             yield self.img_index, self.img, self.label
+                        else:
+                            yield self.img_index, self.img / 255.0, self.label_encoded  # Generate data for net
 
     def get_batch(self, batch_size):
         """

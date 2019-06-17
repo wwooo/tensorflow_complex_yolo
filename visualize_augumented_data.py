@@ -10,7 +10,7 @@ class_list = [
     'Misc'
 ]
 dataset = ImageDataSet(data_set='test',
-                       mode='infer',
+                       mode='visualize',
                        flip=True,
                        random_scale=True,
                        load_to_memory=False)
