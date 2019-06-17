@@ -40,7 +40,7 @@ test_dataset = ImageDataSet(data_set='test',
                             load_to_memory=False)
 
 
-def train(load_weights=False):
+def train(load_weights='False'):
     max_val_loss = 99999999.0
     global_step = tf.Variable(0, trainable=False)
     learning_rate = tf.train.exponential_decay(0.001,

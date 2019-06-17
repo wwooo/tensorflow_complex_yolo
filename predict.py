@@ -32,7 +32,7 @@ dataset = PointCloudDataset(root='./kitti/', data_set='test')
 make_dir('./predict_result')
 
 
-def predict(draw_gt_box=False):
+def predict(draw_gt_box='False'):
 
     important_classes, names, color = read_class_flag('config/class_flag.txt')
     anchors = read_anchors_from_file('config/kitti_anchors.txt')
