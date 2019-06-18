@@ -30,11 +30,11 @@ Below are some prediction examples of the Complex-Yolo， the predictions were m
 ### How to use it
 
 Clone this repo
-1. 
+
 ```bash
 git clone https://github.com/wwooo/tensorflow_complex_yolo
 ```
-2.
+
 
 ```bash
 cd tensorflow_complex_yolo
