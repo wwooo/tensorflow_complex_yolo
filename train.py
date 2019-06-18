@@ -11,8 +11,8 @@ from model.model import yolo_net, yolo_loss
 parser = argparse.ArgumentParser()
 parser.add_argument("--load_weights", type=str, default='False', help="Whether to load weights, True or False")
 parser.add_argument("--batch_size", type=int, default=8, help="Set the batch_size")
-parser.add_argument("--weights_path", type=str, default="./weights", help="Set the weights_path")
-parser.add_argument("--save_dir", type=str, default="./weights", help="Dir to save weights")
+parser.add_argument("--weights_path", type=str, default="./weights/...", help="Set the weights_path")
+parser.add_argument("--save_dir", type=str, default="./weights/", help="Dir to save weights")
 parser.add_argument("--gpu_id", type=str, default='0', help="Specify GPU device")
 parser.add_argument("--num_iter", type=int, default=16000, help="num_max_iter")
 parser.add_argument("--save_interval", type=int, default=2, help="Save once every two epochs")
@@ -112,6 +112,7 @@ def train(load_weights='False'):
         if step % 10 == 0:
             print('iter: %i, loss: %f, lr: %f' % (step, train_loss, lr))
         if (step + 1) % save_steps == 0:
+            print("val...")
             val_loss = 0.0
             for val_step, (val_image_data, val_label_data) in enumerate(
                     test_dataset.get_batch(batch_size)):
