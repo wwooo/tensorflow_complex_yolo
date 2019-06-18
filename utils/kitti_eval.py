@@ -15,10 +15,10 @@ import numpy as np
 import argparse
 import tensorflow as tf
 import cv2
-from utils.model_utils import preprocess_data, non_max_supression, filter_bbox, make_dir
-from utils.kitti_utils import load_kitti_calib, calculate_angle,\
+from model_utils import preprocess_data, non_max_supression, filter_bbox, make_dir
+from kitti_utils import load_kitti_calib, calculate_angle,\
      read_anchors_from_file, read_class_flag
-from utils.kitti_utils import angle_rz_to_ry, coord_image_to_velo, coord_velo_to_cam
+from kitti_utils import angle_rz_to_ry, coord_image_to_velo, coord_velo_to_cam
 prob_th = 0.3
 iou_th = 0.4
 n_anchors = 5
@@ -26,21 +26,21 @@ n_classes = 8
 net_scale = 32
 img_h, img_w = 768, 1024
 grid_w, grid_h = 32, 24
-test_image_path = "test/images/"
+test_image_path = "kitti/image_dataset/images/"
 class_list = [
     'Car', 'Van', 'Truck', 'Pedestrian',
     'Person_sitting', 'Cyclist', 'Tram', 'Misc'
 ]
 train_list = 'config/train_image_list.txt'
 test_list = 'config/test_image_list.txt'
-calib_dir = './kitti/training/calib/'
+calib_dir = 'kitti/training/calib/'
 
 # kitti_static_cylist = 'cyclist_detection_ground.txt'
 # kitti_static_car = 'car_detection_ground.txt'
 # kitti_static_pedestrian = 'pedestrian_detection_ground.txt'
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--weights_path", type=str, default='./weights', help="set the weights_path")
+parser.add_argument("--weights_path", type=str, default='./weights/yolo_tloss_1.185166835784912_vloss_2.9397876932621-220800', help="set the weights_path")
 args = parser.parse_args()
 weights_path = args.weights_path
 
@@ -58,6 +58,7 @@ def kitti_eval():
     train_flag = graph.get_tensor_by_name("flag_placeholder:0")
     y = graph.get_tensor_by_name("net/y:0")
     for test_file_index in range(1000):
+        print('process data: {}'.format(test_file_index))
         calib_file = calib_dir + str(test_file_index).zfill(6) + '.txt'
         calib = load_kitti_calib(calib_file)
         result_file = "./eval_results/" + str(test_file_index).zfill(6) + ".txt"
@@ -91,7 +92,7 @@ def kitti_eval():
                 angle_rz = calculate_angle(box[6], box[5])
                 angle_ry = angle_rz_to_ry(angle_rz)
                 pred_line = pred_cls + " -1 -1 -10 -1 -1 -1 -1 -1" + \
-                    " {.2f} {.2f}".format(pred_width, pred_height) + \
+                    " {:.2f} {:.2f}".format(pred_width, pred_height) + \
                     " {:.2f} {:.2f} {:.2f}".format(cam_x, -1000, cam_z) + \
                     " {:.2f} {:.2f}".format(angle_ry, pred_conf)
                 f.write(pred_line)

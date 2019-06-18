@@ -79,6 +79,7 @@ class ImageDataSet(object):
         self.img = None
         self.img_index = None
         self.label_encoded = None
+        self.num_samples = 0
 
     def horizontal_flip(self, image, target):  # target: class,x,y,w,l,angle
         image = np.flip(image, 1)  # image = image[:, ::-1, :]
@@ -135,6 +136,7 @@ class ImageDataSet(object):
     def data_generator(self):
         with open(self.all_image_index, 'r') as f:
             index_list = f.readlines()
+            self.num_samples = len(index_list)
             if self.load_to_memory:
                 all_images = []
                 all_labels = []

@@ -14,8 +14,8 @@ parser.add_argument("--batch_size", type=int, default=8, help="Set the batch_siz
 parser.add_argument("--weights_path", type=str, default="./weights", help="Set the weights_path")
 parser.add_argument("--save_dir", type=str, default="./weights", help="Dir to save weights")
 parser.add_argument("--gpu_id", type=str, default='0', help="Specify GPU device")
-parser.add_argument("--num_iter", type=int, default=15000, help="num_max_iter")
-parser.add_argument("--save_interval", type=int, default=1600)
+parser.add_argument("--num_iter", type=int, default=16000, help="num_max_iter")
+parser.add_argument("--save_interval", type=int, default=2, help="Save once every two epochs")
 args = parser.parse_args()
 os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu_id
 
@@ -24,10 +24,7 @@ GRID_W, GRID_H = 32, 24
 N_CLASSES = 8
 N_ANCHORS = 5
 IMAGE_HEIGHT, IMAGE_WIDTH, IMAGE_DEPTH = GRID_H * SCALE, GRID_W * SCALE, 3
-BATCH_SIZE = args.batch_size
-NUM_VAL_SAMPLES = 1000.0
-NUM_VAL_STEP = int(NUM_VAL_SAMPLES / BATCH_SIZE)
-
+batch_size = args.batch_size
 
 train_dataset = ImageDataSet(data_set='train',
                              mode='train',
@@ -38,10 +35,18 @@ test_dataset = ImageDataSet(data_set='test',
                             aug_hsv=False,
                             random_scale=False,
                             load_to_memory=False)
+num_val_step = int(test_dataset.num_samples / args.batch_size)
+save_steps = int(train_dataset.num_samples / args.batch_size * args.save_interval)
+
+
+def print_info():
+    print("train samples: {}".format(train_dataset.num_samples))
+    print("test samples: {}".format(test_dataset.num_samples))
+    print("batch_size: {}".format(args.batch_size))
+    print("iter steps: {}".format(args.num_iter))
 
 
 def train(load_weights='False'):
-    make_dir(args.save_dir)
     make_dir(args.save_dir)
     max_val_loss = 99999999.0
     global_step = tf.Variable(0, trainable=False)
@@ -64,7 +69,7 @@ def train(load_weights='False'):
         y = yolo_net(image, train_flag)
     with tf.name_scope('loss'):
         loss, loss_xy, loss_wh, loss_re, loss_im, loss_obj, loss_no_obj, loss_c = yolo_loss(
-            y, label, BATCH_SIZE)
+            y, label, batch_size)
 
     loss_xy_sum = tf.summary.scalar("loss_xy_sum", loss_xy)
     loss_wh_sum = tf.summary.scalar("loss_wh_sum", loss_wh)
@@ -94,7 +99,7 @@ def train(load_weights='False'):
         print('load weights done!')
 
     for step, (train_image_data, train_label_data) in enumerate(
-            train_dataset.get_batch(BATCH_SIZE)):
+            train_dataset.get_batch(batch_size)):
         _, lr, train_loss, data, summary_str = sess.run(
             [train_step, learning_rate, loss, y, loss_tensorboard_sum],
             feed_dict={
@@ -106,25 +111,25 @@ def train(load_weights='False'):
 
         if step % 10 == 0:
             print('iter: %i, loss: %f, lr: %f' % (step, train_loss, lr))
-        if (step + 1) % args.save_interval == 0:
+        if (step + 1) % save_steps == 0:
             val_loss = 0.0
             for val_step, (val_image_data, val_label_data) in enumerate(
-                    test_dataset.get_batch(BATCH_SIZE)):
+                    test_dataset.get_batch(batch_size)):
                 val_loss += sess.run(loss,
                                      feed_dict={
                                          train_flag: False,
                                          image: val_image_data,
                                          label: val_label_data
                                      })
-                if val_step + 1 == NUM_VAL_STEP:
+                if val_step + 1 == num_val_step:
                     break
-            val_loss /= NUM_VAL_STEP
+            val_loss /= num_val_step
             print("iter: {} val_loss: {:.2f}".format(step, val_loss))
             if val_loss < max_val_loss:
                 saver.save(sess,
                            os.path.join(
                                args.save_dir,
-                               'yolo_train_loss_{:.2f}_val_loss_{:.2f}'.format(
+                               'Complex_YOLO_train_loss_{:.2f}_val_loss_{:.2f}'.format(
                                    train_loss, val_loss)),
                            global_step=global_step)
                 max_val_loss = val_loss
@@ -132,11 +137,13 @@ def train(load_weights='False'):
             saver.save(sess,
                        os.path.join(
                            args.save_dir,
-                           'yolo_final_train_loss_{:.2f}'.format(
+                           'Complex_YOLO_final_train_loss_{:.2f}'.format(
                                train_loss)),
                        global_step=global_step)
+            print("training done!")
             break
 
 
 if __name__ == "__main__":
+    print_info()
     train(load_weights=args.load_weights)
