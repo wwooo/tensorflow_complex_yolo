@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 import cv2
 import os
+import sys
+sys.path.append('.')
 from dataset.dataset import ImageDataSet
 from utils.kitti_utils import draw_rotated_box, get_corner_gtbox
 img_h, img_w = 768, 1024
@@ -22,9 +24,10 @@ def make_dir(directory):
 
 
 make_dir('./tmp')
-
+print('the visualized results saved in ./tmp')
 for img_idx, img, target in dataset.data_generator():
     # draw gt bbox
+
     for i in range(target.shape[0]):
         cx = int(target[i][1])
         cy = int(target[i][2])

@@ -23,7 +23,8 @@ class_list = [
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--draw_gt_box", type=str,  default='True', help="Whether to draw_gtbox, True or False")
-parser.add_argument("--weights_path", type=str, default='./weights', help="set the weights_path")
+parser.add_argument("--weights_path", type=str, default='./weights/yolo_tloss_1.185166835784912_vloss_2.9397876932621-220800',
+                    help="set the weights_path")
 args = parser.parse_args()
 weights_path = args.weights_path
 
