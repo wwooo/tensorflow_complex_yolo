@@ -51,14 +51,16 @@ How to prepare data:
 
 ```
 tensorflow_complex_yolo
-            training
-                     calib
-                     label_2
-                     velodyne
+                     kitti
+                        training
+                              calib
+                              label_2
+                              velodyne
 ```
 
                          
  3 . Unzip the downloaded kitti dataset and get the following data. Place the data in the corresponding folder created above.
+  
   
 data_object_velodyne/training/\*.bin&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\*.bin ->  velodyne
 
@@ -66,27 +68,43 @@ data_object_label_2/training/label_2/\*.txt &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\*.txt
 
 data_object_calib/training/calib/\*.txt&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\*.txt -> calib
  
+ 
 Then create  RGB-image data set：
 
-4 . run python utils/make\_image_dataset.py
+```bash
+python utils/make_image_dataset.py
+```
 
  This script will convert the point cloud data into image data, which will be automatically saved in the  ./kitti/image_dataset/, and will generate test_image_list.txt  and train_image_list.txt in the ./config folder. 
 
  Note：This model only predicts the area of 60x80 in front of the car, and encodes the point cloud in this area into a 768 x1024 RGB-map. In the kitti data set, not all samples have objects in this area. Therefore, in the process of making  image dataset, the script will automatically filter out  samples of that doesn't  have objects  in the area.
                         
 How to train a model:
-
-1 .   run python train.py <br>--load\_weights <br> --batch\_size<br> --weights\_path<br> --gpu\_id<br>--num\_iter<br>--save\_interval<br>--save\_dir<br> <br> If you want to load model weights, set --load\_weights=True ,  default is False, you must provide the weights\_path. --num_iter, set the number of iterations. --save_interval, how many epochs to save the model,  default is 2 . --save\_dir,  where the model is saved, default is ./weights/ . Set  --gpu_id to specify which card to use for training, default is 0.
+```bash
+python train.py 
+         --load_weights 
+         --weights_path
+         --batch_size
+         --num_iter
+         --save_dir
+         --save_interval
+         --gpu_id
+```
+ If you want to load model weights, you must provide the weights\_path and set --load\_weights=True ,  default is False. --num_iter, set the number of iterations. --save_interval, how many epochs to save the model,  default is 2 . --save\_dir,  where the model is saved, default is ./weights/ .   --gpu_id  specify which card to use for training, default is 0.
 
 How to predict:
 
-1 . run python predict.py <br>--weights\_path<br>--draw_gt_box
+```bash
+python predict.py  --weights_path =./weights_path/...  --draw_gt_box=True
+```
 
 When running predict.py , directly use point cloud data as input to the model, and the script saves  predicted result in the predict\_result folder. You can set draw\_gt_box = True or False to decide whether to draw the ground truth box on  predicted result.
 
 How to eval:
 
-run python utils/kitti_eval.py
+```bash
+python utils/kitti_eval.py
+```
 
 This script will save the prediction results consistent with the kitti label format. Then use kitti's official evaluation script to evaluate. You should study the official evaluation script of kitti.
 
