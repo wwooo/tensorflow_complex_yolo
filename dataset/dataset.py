@@ -79,7 +79,13 @@ class ImageDataSet(object):
         self.img = None
         self.img_index = None
         self.label_encoded = None
-        self.num_samples = 0
+        self.index_list = self.read_index_list()
+        self.num_samples = len(self.index_list)
+
+    def read_index_list(self):
+        with open(self.all_image_index, 'r') as f:
+            index_list = f.readlines()
+            return index_list
 
     def horizontal_flip(self, image, target):  # target: class,x,y,w,l,angle
         image = np.flip(image, 1)  # image = image[:, ::-1, :]
@@ -134,90 +140,88 @@ class ImageDataSet(object):
         return label
 
     def data_generator(self):
-        with open(self.all_image_index, 'r') as f:
-            index_list = f.readlines()
-            self.num_samples = len(index_list)
-            if self.load_to_memory:
-                all_images = []
-                all_labels = []
-                all_index = []
-                for index in index_list:
-                    index = index.strip()
-                    label_file = self.labels_dir + index + '.txt'
-                    label = read_label_from_txt(label_file)
-                    image_path = self.images_dir + index + '.png'
-                    img = cv2.imread(image_path)
-                    if img is None:
+
+        if self.load_to_memory:
+            all_images = []
+            all_labels = []
+            all_index = []
+            for index in self.index_list:
+                index = index.strip()
+                label_file = self.labels_dir + index + '.txt'
+                label = read_label_from_txt(label_file)
+                image_path = self.images_dir + index + '.png'
+                img = cv2.imread(image_path)
+                if img is None:
+                    print('failed to load image:' + image_path)
+                    continue
+                img = np.flip(img, 2)
+                all_index.append(index)
+                all_images.append(img)
+                all_labels.append(label)
+            sample_index = [i for i in range(len(all_index))]
+            while True:
+                np.random.shuffle(sample_index)
+                for i in sample_index:
+                    self.img_index = np.copy(all_index[i])
+                    self.label = np.copy(all_labels[i])
+                    self.img = np.copy(all_images[i])
+                    if self.aug_hsv:
+                        if np.random.random() > 0.5:
+                            self.img = self.augment_hsv(self.img)
+                    if self.flip:
+                        if np.random.random() > 0.5:
+                            self.img, self.label = self.horizontal_flip(
+                                self.img, self.label)
+                    if self.random_scale:
+                        self.label = self.label_box_center_to_corner(
+                            self.label)
+                        self.img, self.label = self.rand_scale_transform(
+                            self.img, self.label)
+                        self.label = self.label_box_corner_to_center(
+                            self.label)
+                    self.label_encoded = encode_label(
+                        self.label, self.anchors, img_w, img_h, grid_w,
+                        grid_h, iou_th)
+                    if self.mode == 'visualize':  # Generate data for visualization
+                        yield self.img_index, self.img, self.label
+                    else:
+                        yield self.img_index, self.img / 255.0, self.label_encoded  # Generate data for net
+
+        else:
+            while True:
+                np.random.shuffle(self.index_list)
+                for index in self.index_list:
+                    self.img_index = index.strip()
+                    label_file = self.labels_dir + self.img_index + '.txt'
+                    self.label = read_label_from_txt(label_file)
+                    image_path = self.images_dir + self.img_index + '.png'
+                    self.img = cv2.imread(image_path)
+                    if self.img is None:
                         print('failed to load image:' + image_path)
                         continue
-                    img = np.flip(img, 2)
-                    all_index.append(index)
-                    all_images.append(img)
-                    all_labels.append(label)
-                sample_index = [i for i in range(len(all_index))]
-                while True:
-                    np.random.shuffle(sample_index)
-                    for i in sample_index:
-                        self.img_index = np.copy(all_index[i])
-                        self.label = np.copy(all_labels[i])
-                        self.img = np.copy(all_images[i])
-                        if self.aug_hsv:
-                            if np.random.random() > 0.5:
-                                self.img = self.augment_hsv(self.img)
-                        if self.flip:
-                            if np.random.random() > 0.5:
-                                self.img, self.label = self.horizontal_flip(
-                                    self.img, self.label)
-                        if self.random_scale:
-                            self.label = self.label_box_center_to_corner(
-                                self.label)
-                            self.img, self.label = self.rand_scale_transform(
-                                self.img, self.label)
-                            self.label = self.label_box_corner_to_center(
-                                self.label)
-                        self.label_encoded = encode_label(
-                            self.label, self.anchors, img_w, img_h, grid_w,
-                            grid_h, iou_th)
-                        if self.mode == 'visualize':  # Generate data for visualization
-                            yield self.img_index, self.img, self.label
-                        else:
-                            yield self.img_index, self.img / 255.0, self.label_encoded  # Generate data for net
+                    self.img = np.flip(self.img, 2)
 
-            else:
-                while True:
-                    np.random.shuffle(index_list)
-                    for index in index_list:
-                        self.img_index = index.strip()
-                        label_file = self.labels_dir + self.img_index + '.txt'
-                        self.label = read_label_from_txt(label_file)
-                        image_path = self.images_dir + self.img_index + '.png'
-                        self.img = cv2.imread(image_path)
-                        if self.img is None:
-                            print('failed to load image:' + image_path)
-                            continue
-                        self.img = np.flip(self.img, 2)
-
-                        if self.aug_hsv:
-                            if np.random.random() > 0.5:
-                                self.img = self.augment_hsv(self.img)
-                        if self.flip:
-                            if np.random.random() > 0.5:
-                                self.img, self.label = self.horizontal_flip(
-                                    self.img, self.label)
-                        if self.random_scale:
-                            self.label = self.label_box_center_to_corner(
-                                self.label)
-                            self.img, self.label = self.rand_scale_transform(
+                    if self.aug_hsv:
+                        if np.random.random() > 0.5:
+                            self.img = self.augment_hsv(self.img)
+                    if self.flip:
+                        if np.random.random() > 0.5:
+                            self.img, self.label = self.horizontal_flip(
                                 self.img, self.label)
-                            self.label = self.label_box_corner_to_center(
-                                self.label)
-                        self.label_encoded = encode_label(
-                            self.label, self.anchors, img_w, img_h, grid_w,
-                            grid_h, iou_th)
-                        if self.mode == 'visualize':  # Generate data for visualization
-                            yield self.img_index, self.img, self.label
-                        else:
-                            yield self.img_index, self.img / 255.0, self.label_encoded  # Generate data for net
+                    if self.random_scale:
+                        self.label = self.label_box_center_to_corner(
+                            self.label)
+                        self.img, self.label = self.rand_scale_transform(
+                            self.img, self.label)
+                        self.label = self.label_box_corner_to_center(
+                            self.label)
+                    self.label_encoded = encode_label(
+                        self.label, self.anchors, img_w, img_h, grid_w,
+                        grid_h, iou_th)
+                    if self.mode == 'visualize':  # Generate data for visualization
+                        yield self.img_index, self.img, self.label
+                    else:
+                        yield self.img_index, self.img / 255.0, self.label_encoded  # Generate data for net
 
     def get_batch(self, batch_size):
         """
