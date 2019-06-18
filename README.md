@@ -90,7 +90,7 @@ python train.py
          --save_interval
          --gpu_id
 ```
- If you want to load model weights, you must provide the weights\_path and set --load\_weights=True ,  default is False. --num_iter, set the number of iterations. --save_interval, how many epochs to save the model,  default is 2 . --save\_dir,  where the model is saved, default is ./weights/ .   --gpu_id  specify which card to use for training, default is 0.
+All parameters have default values, so you can run the script directly. If you want to load model weights, you must provide the weights\_path and set--load\_weights=True ,  default is False. --batch_size, default 8, you can adjust the batch_size according to the memory size of the GPU card. --num_iter, set the number of iterations. --save_interval, how many epochs to save the model,  default is 2 . --save\_dir,  where the model is saved, default is ./weights/ .   --gpu_id  specify which card to use for training, default is 0.
 
 How to predict:
 
