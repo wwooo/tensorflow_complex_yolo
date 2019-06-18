@@ -24,10 +24,9 @@ def make_dir(directory):
 
 
 make_dir('./tmp')
-print('the visualized results saved in ./tmp')
 for img_idx, img, target in dataset.data_generator():
     # draw gt bbox
-    print("process data: {}".format(img_idx))
+    print("process data: {}, saved in ./tmp".format(img_idx))
     for i in range(target.shape[0]):
         cx = int(target[i][1])
         cy = int(target[i][2])

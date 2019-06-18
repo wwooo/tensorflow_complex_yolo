@@ -44,9 +44,8 @@ def predict(draw_gt_box='False'):
     image = graph.get_tensor_by_name("image_placeholder:0")
     train_flag = graph.get_tensor_by_name("flag_placeholder:0")
     y = graph.get_tensor_by_name("net/y:0")
-    print("predict result saved in ./predict_result/")
     for img_idx, rgb_map, target in dataset.getitem():
-        print("process data: {}".format(img_idx))
+        print("process data: {}, saved in ./predict_result/".format(img_idx))
         img = np.array(rgb_map * 255, np.uint8)
         target = np.array(target)
         # draw gt bbox

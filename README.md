@@ -110,7 +110,7 @@ This script will save the prediction results consistent with the kitti label for
 
 ### Others
 
-You can run  utils/visualize_augumented_data.py to visualize the transformed  data and labels.
+You can run  utils/visualize_augumented_data.py to visualize the transformed  data and labels, results saved in ./tmp.
 
 ### ToDo
 

@@ -58,7 +58,7 @@ def kitti_eval():
     train_flag = graph.get_tensor_by_name("flag_placeholder:0")
     y = graph.get_tensor_by_name("net/y:0")
     for test_file_index in range(1000):
-        print('process data: {}'.format(test_file_index))
+        print('process data: {}, saved in ./eval_results'.format(test_file_index))
         calib_file = calib_dir + str(test_file_index).zfill(6) + '.txt'
         calib = load_kitti_calib(calib_file)
         result_file = "./eval_results/" + str(test_file_index).zfill(6) + ".txt"
